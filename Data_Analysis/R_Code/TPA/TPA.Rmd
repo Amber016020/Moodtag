@@ -1,0 +1,222 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+```{r}
+install.packages("lme4")
+install.packages("Depends")
+
+```
+
+```{r}
+# 加載必要的庫
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidyverse)
+library(ggplot2)
+
+```
+
+```{r}
+setwd("./data/")
+# 讀取 data CSV 文件
+data <- read_csv("survey_finish.csv", locale = locale(encoding = "UTF-8"))
+tpa_data <- data %>% filter(scaleName == "TPA")
+panas_data <- data %>% filter(scaleName == "PANAS")
+```
+
+
+```{r}
+# 定義不信任和信任的問題號碼
+distrust_questions <- c(1, 2, 3, 4, 5)
+trust_questions <- c(6, 7, 8, 9, 10, 11, 12)
+
+# 將數據轉換為數值類型
+tpa_data <- tpa_data %>%
+  mutate(post = as.numeric(post))
+
+# 轉換數據為長格式
+long_tpa_data <- tpa_data %>%
+  pivot_longer(cols = c(post), names_to = "time", values_to = "score")
+
+# 將問題號碼對應到子量表
+long_tpa_data <- long_tpa_data %>%
+  mutate(subscale = case_when(
+    question_number %in% distrust_questions ~ "Distrust",
+    question_number %in% trust_questions ~ "Trust"
+  ))
+
+# 查看轉換後的數據
+print(long_tpa_data)
+
+# 計算每個子量表在每個時間點的總得分
+subscale_scores <- long_tpa_data %>%
+  group_by(user_id, userName, mode, time, subscale) %>%
+  summarize(total_score = sum(score, na.rm = TRUE)) %>%
+  ungroup()
+
+ggplot(subscale_scores, aes(x = time, y = total_score, fill = subscale, group = interaction(userName, subscale))) +
+  geom_bar(stat = "identity", position = "dodge") +  # 使用長條圖
+  facet_wrap(~ userName, scales = "free_y") +  # 每個受測者獨立的圖
+  theme_minimal() +
+  labs(title = "TPA Subscale Scores for Each Participant",
+       x = "Time",
+       y = "Total Score",
+       fill = "Subscale") +  # 圖例
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+# 如果你想將所有受測者合併成一個圖表，顯示不同模式下的變化：
+ggplot(subscale_scores, aes(x = time, y = total_score, color = subscale, group = interaction(userName, subscale))) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~mode, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "TPA Subscale Scores Across Different Times and Modes",
+       x = "Time",
+       y = "Total Score",
+       color = "Subscale")
+
+```
+```{r}
+# 处理 PANAS 数据
+panas_data <- panas_data %>%
+  mutate(neutral = as.numeric(neutral),
+         pre = as.numeric(pre),
+         post = as.numeric(post))
+
+long_panas_data <- panas_data %>%
+  pivot_longer(cols = c(neutral, pre, post), names_to = "time", values_to = "score") %>%
+  mutate(subscale = case_when(
+    question_number %in% positive_questions ~ "Positive",
+    question_number %in% negative_questions ~ "Negative"
+  ))
+
+subscale_scores_panas <- long_panas_data %>%
+  group_by(user_id, userName, mode, time, subscale) %>%
+  summarize(total_score = sum(score, na.rm = TRUE), .groups = 'drop')
+
+# 处理 TPA 数据
+tpa_data <- tpa_data %>%
+  mutate(post = as.numeric(post))
+
+long_tpa_data <- tpa_data %>%
+  pivot_longer(cols = c(post), names_to = "time", values_to = "score") %>%
+  mutate(subscale = case_when(
+    question_number %in% distrust_questions ~ "Distrust",
+    question_number %in% trust_questions ~ "Trust"
+  ))
+
+print(subscale_scores_tpa)
+
+
+subscale_scores_tpa <- long_tpa_data %>%
+  group_by(user_id, userName, mode, time, subscale) %>%
+  summarize(total_score = sum(score, na.rm = TRUE), .groups = 'drop')
+
+# 合并 PANAS 和 TPA 数据
+combined_scores <- full_join(
+  subscale_scores_panas %>%
+    rename(panas_score = total_score),
+  subscale_scores_tpa %>%
+    rename(tpa_score = total_score),
+  by = c("user_id", "userName", "mode", "time", "subscale")
+)
+
+print(combined_scores)
+
+# 绘制散点图
+# 畫出 PANAS 和 TPA 的散佈圖
+ggplot(combined_scores, aes(x = panas_score, y = tpa_score, color = subscale)) +
+  geom_point(size = 3, alpha = 0.7) + # 使用點來表示數據點
+  facet_wrap(~mode + time) + # 根據 mode 和 time 分別繪圖
+  labs(title = "PANAS vs. TPA Scores Scatter Plot",
+       x = "PANAS Total Score",
+       y = "TPA Total Score",
+       color = "Subscale") +
+  theme_minimal() + # 使用簡潔的主題
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # 調整 X 軸標籤的角度
+
+```
+
+
+
+```{r}
+# 將 neutral 和 post 轉成 numeric
+panas_data <- panas_data %>%
+  mutate(neutral = as.numeric(neutral),
+         pre = as.numeric(pre),
+         post = as.numeric(post))
+
+long_panas_data <- panas_data %>%
+  pivot_longer(cols = c(neutral,pre, post), names_to = "time", values_to = "score")
+
+descriptive_stats <- long_panas_data %>%
+  group_by(mode, time) %>%
+  summarise(mean_score = mean(score, na.rm = TRUE),
+            sd_score = sd(score, na.rm = TRUE),
+            .groups = "drop")
+
+# 定義每個子量表的問題號碼
+positive_questions <- c(1, 3, 5, 7, 9, 10, 12, 14, 16, 17, 19)
+negative_questions <- c(2, 4, 6, 7, 8, 11, 13, 15, 18, 20)
+
+
+# 將問題號碼對應到子量表
+long_panas_data <- long_panas_data %>%
+  mutate(subscale = case_when(
+    question_number %in% positive_questions ~ "Positive",
+    question_number %in% negative_questions ~ "Negative"
+  ))
+
+
+# 計算每個子量表在每個時間點的總得分
+subscale_scores <- long_panas_data %>%
+  group_by(user_id, userName, mode, time, subscale) %>%
+  summarize(total_score = sum(score, na.rm = TRUE)) %>%
+  ungroup()
+
+print(subscale_scores)
+```
+
+
+```{r}
+trust_emotion_data <- data %>% filter(scaleName %in% c("TPA", "PANAS"))
+print(trust_emotion_data)
+
+trust_emotion_data <- trust_emotion_data %>%
+  mutate(post = as.numeric(post))
+
+# 按 mode 和 question_number 对 TPA 和 PANAS 的 score 進行寬表轉換
+wide_data <- trust_emotion_data %>%
+  pivot_wider(names_from = scaleName, values_from = question_number) %>%
+  drop_na()  
+
+print(wide_data)
+```
+
+
+```{r}
+# 绘制散点图
+ggplot(wide_data, aes(x = TPA, y = PANAS, color = mode)) +
+  geom_point(size = 3, alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Scatter Plot of TPA vs PANAS Scores",
+       x = "TPA Trust Score",
+       y = "PANAS Emotion Score",
+       color = "Mode") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

@@ -1,0 +1,2133 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+# install.packages("lme4")
+# install.packages("Depends")
+# install.packages("ggplot2")
+# install.packages("dplyr")
+# install.packages("readr")
+# install.packages("tidyverse")
+# install.packages("car")
+# install.packages("lme4")
+# install.packages("gridExtra")
+# install.packages("RColorBrewer")
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(car)
+library(lme4)
+library(gridExtra)
+library(RColorBrewer)
+
+```
+
+```{r}
+setwd("./data/")
+# 讀取 data CSV 文件
+data <- read_csv("survey_finish.csv", locale = locale(encoding = "UTF-8"))
+
+# 刪掉表現不好的受測者
+data <- data %>%
+  filter(!str_detect(user_id, "^6526") 
+         #& !str_detect(user_id, "^6610")
+         & !str_detect(user_id, "^2555")
+         #& !str_detect(user_id, "^241")
+         & !str_detect(user_id, "^5497")
+         #& !str_detect(user_id, "^6172")
+         #& !str_detect(user_id, "^8944")
+         #& !str_detect(user_id, "^4486")
+         #& !str_detect(user_id, "^4030")
+         #& !str_detect(user_id, "^2953")
+         #& !str_detect(user_id, "^6646")
+         #& !str_detect(user_id, "^342")
+         #& !str_detect(user_id, "^1398")
+         #& !str_detect(user_id, "^9890")
+         #& !str_detect(user_id, "^8468")
+         #& !str_detect(user_id, "^817")
+         )
+
+data <- data %>%
+  mutate(mode = ifelse(mode == "self-affect", "manual affect", mode))
+
+tag_data <- read_csv("tagCount.csv", locale = locale(encoding = "UTF-8"))
+
+# 排除 user_id 以 6526 開頭的資料
+tag_data <- tag_data %>%
+  filter(!grepl("^6526", unique_id))
+
+tag_data <- tag_data %>%
+  mutate(pattern = ifelse(pattern == "self-affect", "manual affect", pattern))
+
+# 取出PANAS的量表回答
+panas_data <- data %>% filter(scaleName == "PANAS")
+paq_data <- data %>% filter(scaleName == "PAQ")
+abcct_data <- data %>% filter(scaleName == "ABCCT")
+tpa_data <- data %>% filter(scaleName == "TPA")
+print(panas_data)
+print(paq_data)
+print(abcct_data)
+print(tpa_data)
+print(tag_data)
+```
+```{r}
+# 將 neutral 和 post 轉成 numeric
+panas_data <- panas_data %>%
+  mutate(neutral = as.numeric(neutral),
+         pre = as.numeric(pre),
+         post = as.numeric(post))
+
+# 定義每個子量表的問題號碼
+positive_questions <- c(1, 3, 5, 7, 9, 10, 12, 14, 16, 17, 19)
+negative_questions <- c(2, 4, 6, 7, 8, 11, 13, 15, 18, 20)
+
+# 先將數據轉換為長格式
+long_panas_data <- panas_data %>%
+  pivot_longer(cols = c(neutral, pre, post), names_to = "time", values_to = "score")
+
+# 將問題號碼對應到子量表
+long_panas_data <- long_panas_data %>%
+  mutate(subscale = case_when(
+    question_number %in% positive_questions ~ "Positive",
+    question_number %in% negative_questions ~ "Negative"
+  ))
+
+# 檢查結果
+print(long_panas_data)
+
+# 確保 neutral 列是數字型
+paq_data <- paq_data %>%
+  mutate(neutral = as.numeric(neutral),
+         post = as.numeric(post))
+long_paq_data <- paq_data %>%
+  pivot_longer(cols = c(neutral, post), names_to = "time", values_to = "score")
+
+# 檢查結果
+print(paq_data)
+
+# 定義不信任和信任的問題號碼
+distrust_questions <- c(1, 2, 3, 4, 5)
+trust_questions <- c(6, 7, 8, 9, 10, 11, 12)
+
+# 將數據轉換為數值類型
+tpa_data <- tpa_data %>%
+  mutate(post = as.numeric(post))
+
+# 轉換數據為長格式
+long_tpa_data <- tpa_data %>%
+  pivot_longer(cols = c(post), names_to = "time", values_to = "score")
+
+# 將問題號碼對應到子量表
+long_tpa_data <- long_tpa_data %>%
+  mutate(subscale = case_when(
+    question_number %in% distrust_questions ~ "Distrust",
+    question_number %in% trust_questions ~ "Trust"
+  ))
+
+print(long_tpa_data)
+
+# 定義每個子量表的問題號碼
+n_dif_questions <- c(2, 8, 14, 20)
+p_dif_questions <- c(5, 11, 17, 23)
+n_ddf_questions <- c(1, 7, 13, 19)
+p_ddf_questions <- c(4, 10, 16, 22)
+g_eot_questions <- c(3, 6, 9, 12, 15, 18, 21, 24)
+
+# 將問題號碼對應到子量表
+paq_data <- paq_data %>%
+  mutate(subscale = case_when(
+    question_number %in% n_dif_questions ~ "N-DIF",
+    question_number %in% p_dif_questions ~ "P-DIF",
+    question_number %in% n_ddf_questions ~ "N-DDF",
+    question_number %in% p_ddf_questions ~ "P-DDF",
+    question_number %in% g_eot_questions ~ "G-EOT"
+  ))
+
+# 將數據轉換為長格式
+long_paq_data <- paq_data %>%
+  pivot_longer(cols = c(neutral, post), names_to = "time", values_to = "score")
+
+
+abcct_data <- abcct_data %>%
+  mutate(neutral = as.numeric(neutral))  # 将 neutral 列转换为数值类型
+
+abcct_data$user_id <- as.character(abcct_data$user_id)
+abcct_data$question_number <- as.numeric(abcct_data$question_number)
+abcct_data$post <- as.numeric(abcct_data$post)
+
+print(abcct_data)
+
+# 將 neutral 和 post 轉換為長格式，並改寫 condition 名稱
+abcct_data_long <- abcct_data %>%
+  filter(mode == "Moodtag") %>%
+  pivot_longer(cols = c(neutral, post), names_to = "communication_tool", values_to = "score") %>%
+  mutate(communication_tool = ifelse(communication_tool == "neutral", "common", "Moodtag"))
+
+print(abcct_data_long)
+
+
+# 定義每個子量表的問題號碼
+EE_questions <- c(1, 2, 3)
+EP_questions <- c(4, 5, 6)
+PA_questions <- c(7, 8, 9)
+SS_questions <- c(10, 11, 12, 13, 14)
+FO_questions <- c(15, 16, 17, 18)
+UE_questions <- c(19, 20, 21, 22)
+TP_questions <- c(23, 24, 25, 26)
+
+# 將問題號碼對應到子量表
+abcct_data_long <- abcct_data_long_filled %>%
+  mutate(subscale = case_when(
+    question_number %in% EE_questions ~ "Emotion Express",
+    question_number %in% EP_questions ~ "Engagement & Play",
+    question_number %in% PA_questions ~ "Presence-in Absence",
+    question_number %in% SS_questions ~ "Social Support",
+    question_number %in% FO_questions ~ "Obligations",
+    question_number %in% UE_questions ~ "Unmet Expectations",
+    question_number %in% TP_questions ~ "Threat to Privacy"
+  ),
+  positive_or_negative = case_when(
+    subscale %in% c("Emotion Express", "Engagement & Play", "Presence-in Absence", "Social Support") ~ "Positive",
+    subscale %in% c("Obligations", "Unmet Expectations", "Threat to Privacy") ~ "Negative"
+  ))
+
+
+print(abcct_data_long)
+```
+
+
+```{r}
+# PANAS_moodtag post-pre (正面 vs 負面) and TPA(信任 vs 不信任)
+# PANAS只取Moodtag的前後差異
+moodtag_panas_data <- long_panas_data %>%
+  filter(mode == "Moodtag") 
+
+# 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+moodtag_panas_diff <- moodtag_panas_data %>%
+  group_by(user_id, question_number) %>%
+  pivot_wider(names_from = time, values_from = score) %>%
+  mutate(diff = post - pre) 
+
+# 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+panas_summary <- moodtag_panas_diff %>%
+  group_by(user_id, subscale) %>%
+  summarise(mean_score = sum(diff), .groups = 'drop')
+
+# 計算TPA的信任/不信任平均值，並將 subscale 保留在結果中
+tpa_summary <- long_tpa_data %>%
+  group_by(user_id, subscale, time) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 合併PANAS和TPA數據
+moodtag_panas_tpa_combined_data <- merge(panas_summary, tpa_summary, by = c("user_id"))
+
+print(moodtag_panas_tpa_combined_data)
+
+# 計算不同子量表下的相關性和相關性檢定結果
+correlation_results <- moodtag_panas_tpa_combined_data %>%
+  group_by(subscale.x, subscale.y) %>%
+  summarise(
+    correlation = cor(mean_score.x, mean_score.y, method = "pearson"),
+    p_value = cor.test(mean_score.x, mean_score.y)$p.value,
+    .groups = "drop"
+  )
+
+# 輸出相關性結果
+print(correlation_results)
+
+# 创建图表对象
+plot <- ggplot(moodtag_panas_tpa_combined_data, aes(x = mean_score.x, y = mean_score.y, color = subscale.x)) +
+  geom_point() +
+  facet_grid(subscale.x ~ subscale.y) +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", color = "black", size = 0.3) +
+  labs(title = "Scatter Plot of PANAS and TPA Subscales",
+       x = "PANAS Score",
+       y = "TPA Score",
+       color = "PANAS Subscale") +
+  theme_minimal()+
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  )
+
+# 在 R 中显示图表
+print(plot)
+
+# 保存图表到指定路径
+ggsave(filename = "E:/Research/part/圖表/panas_tpa_scatterplot.png", 
+       plot = plot, 
+       width = 10, 
+       height = 8, 
+       dpi = 300)
+```
+
+```{r}
+# 過濾出 "Trust" 和 "Negative" 子量表
+filtered_data <- moodtag_panas_tpa_combined_data %>%
+  filter(subscale.y == "Trust" & subscale.x == "Negative")
+
+# 計算相關性和 p 值
+correlation_test <- cor.test(filtered_data$mean_score.x, filtered_data$mean_score.y)
+correlation_value <- correlation_test$estimate
+p_value <- correlation_test$p.value
+
+# 创建图表对象
+plot <- ggplot(filtered_data, aes(x = mean_score.x, y = mean_score.y, color = subscale.x)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", color = "black", size = 0.3) +
+  labs(title = "Scatter Plot of Trust and Negative PANAS Scores",
+       x = "Trust Score (TPA)",
+       y = "Negative Score (PANAS)",
+       color = "Subscale") +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  ) +
+  # 添加相关性和p值文本
+  annotate("text", x = min(filtered_data$mean_score.x), y = max(filtered_data$mean_score.y), 
+           label = paste("Correlation: ", round(correlation_value, 2), 
+                         "\np-value: ", round(p_value, 3)), 
+           hjust = 0, vjust = 1, size = 5)
+
+# 在 R 中显示图表
+print(plot)
+
+# 保存图表到指定路径
+ggsave(filename = "E:/Research/part/圖表/panas_tpa_scatterplot_trust_negative.png", 
+       plot = plot, 
+       width = 10, 
+       height = 8, 
+       dpi = 300)
+
+```
+
+
+
+```{r}
+# PAQ_moodtag post-pre and tag behavior (moodtag 標記量 vs moodtag 修改量)
+
+tag_moodtag_data <- tag_data %>%
+  filter(pattern == "Moodtag")
+
+# 将 tag_moodtag_data 中的 unique_id 列重命名为 user_id
+tag_moodtag_data_renamed <- tag_moodtag_data %>%
+  rename(user_id = unique_id)
+
+tag_panas_combined_data <- merge(panas_summary, tag_moodtag_data_renamed, by = c("user_id"))
+
+print(tag_panas_combined_data)
+
+# 按照 subscale 分组，分别计算正面和负面的相关性
+for (subscale_type in c("Positive", "Negative")) {
+
+  # 筛选出正面或负面的子量表数据
+  subscale_data <- tag_panas_combined_data %>%
+    filter(subscale == subscale_type)
+  
+  # 计算兩種相關性
+  cor_total_moodtag <- cor(subscale_data$total_moodtag_count, 
+                           subscale_data$mean_score, 
+                           method = "pearson", 
+                           use = "complete.obs")
+  cor_total_moodtag_test <- cor.test(subscale_data$total_moodtag_count,
+                                   subscale_data$mean_score)
+  
+  cor_modified_moodtag <- cor(subscale_data$modified_moodtag_count, 
+                              subscale_data$mean_score, 
+                              method = "pearson", 
+                              use = "complete.obs")
+  cor_modified_moodtag_test <- cor.test(subscale_data$modified_moodtag_count,
+                                      subscale_data$mean_score)
+  
+  # 相關性結果
+  print(paste("Subscale:", subscale_type))
+  print(paste("Correlation between total_moodtag_count and mean_score: ", cor_total_moodtag))
+  print(cor_total_moodtag_test)
+  print(paste("Correlation between modified_moodtag_count and mean_score: ", cor_modified_moodtag))
+  print(cor_modified_moodtag_test)
+  
+  # 为正负情绪指定不同的调色板
+  if (subscale_type == "Positive") {
+    colors <- c("#FFA07A", "#FFD700")  # 橙色和黄色
+  } else if (subscale_type == "Negative") {
+    colors <- c("#87CEFA", "#6A5ACD")  # 淡藍色和紫色
+  }
+  
+  # 散点图列表和相关性标签
+  plots <- list(
+    list(paste("Total Moodtag Tags"), "total_moodtag_count", colors[1], cor_total_moodtag),
+    list(paste( "Modified Moodtag Tags"), "modified_moodtag_count", colors[2], cor_modified_moodtag)
+  )
+  
+  # 创建多个散点图并添加线性拟合线
+  plot_list <- lapply(plots, function(p) {
+    ggplot(subscale_data, aes_string(x = p[[2]], y = "mean_score")) +
+      geom_point(color = p[[3]]) +
+      geom_smooth(method = "lm", se = FALSE, color = "black", size = 0.5) +
+      labs(subtitle = paste("Pearson Correlation Coefficient: ", round(p[[4]], 2)),
+           x = p[[1]],
+           y = paste(subscale_type, "PANAS Mean Score")) +  # 修改Y轴标题
+      theme_minimal() +
+      theme(panel.background = element_rect(fill = "white"), 
+            plot.background = element_rect(fill = "white"),
+            plot.title = element_text(face = "bold", size = 14),
+            plot.subtitle = element_text(size = 12),
+            axis.title = element_text(size = 12),
+            axis.text = element_text(size = 10))
+  })
+  # 将三张图并排显示在一起
+  combined_plot <- grid.arrange(grobs = plot_list, ncol = 2)
+  
+  # 保存图表，使用正负面区分文件名
+  ggsave(filename = paste0("E:/Research/part/圖表/", subscale_type, "_moodtag_vs_tagBahvior.png"), 
+         plot = combined_plot, 
+         width = 12, 
+         height = 6, 
+         dpi = 300)
+}
+
+```
+
+```{r}
+# PAQ_moodtag post-pre and tag behavior (moodtag 標記量 vs moodtag 修改量)
+
+tag_moodtag_data <- tag_data %>%
+  filter(pattern == "Moodtag")
+
+# 将 tag_moodtag_data 中的 unique_id 列重命名为 user_id
+tag_moodtag_data_renamed <- tag_moodtag_data %>%
+  rename(user_id = unique_id)
+
+paq_moodtag_data <- long_paq_data %>%
+  filter(mode == "Moodtag")
+
+# 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+paq_moodtag_data <- paq_moodtag_data %>%
+  group_by(user_id, question_number) %>%
+  pivot_wider(names_from = time, values_from = score) %>%
+  mutate(paq_diff = post - neutral) 
+
+
+paq_moodtag_data <- paq_moodtag_data %>%
+  group_by(user_id) %>%
+  summarise(paq_diff = sum(paq_diff), .groups = 'drop')
+
+tag_paq_combined_data <- merge(paq_moodtag_data, tag_moodtag_data_renamed, by = c("user_id"))
+
+print(tag_paq_combined_data)
+
+  
+# 计算兩種相關性
+cor_total_moodtag <- cor(tag_paq_combined_data$total_moodtag_count, 
+                         tag_paq_combined_data$paq_diff, 
+                         method = "pearson", 
+                         use = "complete.obs")
+
+cor_modified_moodtag <- cor(tag_paq_combined_data$modified_moodtag_count, 
+                            tag_paq_combined_data$paq_diff, 
+                            method = "pearson", 
+                            use = "complete.obs")
+
+cor.test(tag_paq_combined_data$total_moodtag_count, tag_paq_combined_data$paq_diff)
+cor.test(tag_paq_combined_data$modified_moodtag_count, tag_paq_combined_data$paq_diff)
+
+# 相關性結果
+print(paste("Correlation between total_moodtag_count and mean_score: ", cor_total_moodtag))
+print(paste("Correlation between modified_moodtag_count and mean_score: ", cor_modified_moodtag))
+
+colors <- brewer.pal(n = 3, name = "Set2")  # Set2 是柔和調色板
+
+# 散点图列表和相关性标签
+plots <- list(
+  list(paste("Total Moodtag Tags"), "total_moodtag_count", colors[1], cor_total_moodtag),
+  list(paste( "Modified Moodtag Tags"), "modified_moodtag_count", colors[2], cor_modified_moodtag)
+)
+
+# 创建多个散点图并添加线性拟合线
+plot_list <- lapply(plots, function(p) {
+  ggplot(tag_paq_combined_data, aes_string(x = p[[2]], y = "paq_diff")) +
+    geom_point(color = p[[3]]) +
+    geom_smooth(method = "lm", se = FALSE, color = "black", size = 0.5) +
+    labs(subtitle = paste("Pearson Correlation Coefficient: ", round(p[[4]], 2)),
+         x = p[[1]],
+         y = "Moodtag diff Score(post-neutral)") +  # 修改Y轴标题
+    theme_minimal() +
+    theme(panel.background = element_rect(fill = "white"), 
+          plot.background = element_rect(fill = "white"),
+          plot.title = element_text(face = "bold", size = 14),
+          plot.subtitle = element_text(size = 12),
+          axis.title = element_text(size = 12),
+          axis.text = element_text(size = 10))
+})
+# 将兩张图并排显示在一起
+combined_plot <- grid.arrange(grobs = plot_list, ncol = 2)
+
+# 保存图表，使用正负面区分文件名
+ggsave(filename = paste0("E:/Research/part/圖表/paq_moodtag_vs_tagBahvior.png"), 
+       plot = combined_plot, 
+       width = 12, 
+       height = 6, 
+       dpi = 300)
+```
+
+```{r}
+# PAQ_Manual Affect Labeling post-pre and tag behavior (手動標記量)
+tag_manual_data <- tag_data %>%
+  filter(pattern == "manual affect")
+
+# 将 tag_moodtag_data 中的 unique_id 列重命名为 user_id
+tag_manual_data_renamed <- tag_manual_data %>%
+  rename(user_id = unique_id)
+
+print(long_paq_data)
+
+paq_manual_data <- long_paq_data %>%
+  filter(mode == "manual affect")
+
+print(paq_manual_data)
+
+# 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+paq_manual_data <- paq_manual_data %>%
+  group_by(user_id, question_number) %>%
+  pivot_wider(names_from = time, values_from = score) %>%
+  mutate(paq_diff = post - neutral) 
+
+
+paq_manual_data <- paq_manual_data %>%
+  group_by(user_id) %>%
+  summarise(paq_diff = sum(paq_diff), .groups = 'drop')
+
+tag_paq_combined_data <- merge(paq_manual_data, tag_manual_data_renamed, by = c("user_id"))
+
+print(tag_paq_combined_data)
+
+# 計算關聯性
+cor_manual_tag <- cor(tag_paq_combined_data$manual_tag_count, 
+                      tag_paq_combined_data$paq_diff, 
+                      method = "pearson", 
+                      use = "complete.obs")
+
+cor_manual_tag_test <- cor.test(tag_paq_combined_data$manual_tag_count,
+                                tag_paq_combined_data$paq_diff)
+
+# 打印相关性结果
+print(paste("Subscale:", subscale_type))
+print(paste("Correlation between manual_tag_count and mean_score: ", cor_manual_tag))
+
+print(cor_manual_tag_test)
+
+colors <- brewer.pal(n = 3, name = "Set2")  # Set2 是柔和調色板
+
+# 創建散點圖並添加線性擬合線
+plot <- ggplot(tag_paq_combined_data, aes(x = manual_tag_count, y = paq_diff)) +
+  geom_point(color = colors[3]) +  # 散點圖的顏色
+  geom_smooth(method = "lm", se = FALSE, size = 0.5) +  # 添加線性擬合線
+  labs(subtitle = paste("Pearson Correlation Coefficient: ", round(cor_manual_tag, 2)),
+       x = "Manually Labeled Tags",  # X 軸標題
+       y = paste("PAQ Difference")) +  # Y 軸標題
+  theme_minimal() +
+  theme(panel.background = element_rect(fill = "white"), 
+        plot.background = element_rect(fill = "white"),
+        plot.title = element_text(face = "bold", size = 14),
+        plot.subtitle = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10))
+
+# 顯示圖表
+print(plot)
+
+# 保存圖表
+ggsave(filename = paste0("E:/Research/part/圖表/PAQ_manual_vs_paq_diff.png"), 
+       plot = plot, 
+       width = 8, 
+       height = 6, 
+       dpi = 300)
+
+# 建立模型 (假設已執行)
+manual_tag_lm <- lm(paq_diff ~ manual_tag_count, data = tag_paq_combined_data)
+
+# 輸出摘要
+summary(manual_tag_lm)
+
+# 殘差分析
+plot(manual_tag_lm)
+
+```
+```{r}
+# PAQ_Manual Affect Labeling post-pre and tag behavior (手動標記量)
+tag_manual_data <- tag_data %>%
+  filter(pattern == "Moodtag")
+
+
+
+# 假設 tag_manual_data 是你的數據框
+tag_manual_data$acc_tag <- 1-(tag_manual_data$modified_moodtag_count + tag_manual_data$manual_tag_count) / tag_manual_data$total_moodtag_count
+
+# 将 tag_moodtag_data 中的 unique_id 列重命名为 user_id
+tag_manual_data_renamed <- tag_manual_data %>%
+  rename(user_id = unique_id)
+
+print(tag_manual_data)
+
+paq_manual_data <- long_paq_data %>%
+  filter(mode == "Moodtag") 
+# 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+paq_manual_data <- paq_manual_data %>%
+  group_by(user_id, question_number) %>%
+  pivot_wider(names_from = time, values_from = score) %>%
+  mutate(paq_diff = post - neutral) 
+
+
+paq_manual_data <- paq_manual_data %>%
+  group_by(user_id) %>%
+  summarise(paq_diff = sum(paq_diff), .groups = 'drop')
+
+tag_paq_combined_data <- merge(paq_manual_data, tag_manual_data_renamed, by = c("user_id"))
+
+print(tag_paq_combined_data)
+
+# 計算關聯性
+cor_manual_tag <- cor(tag_paq_combined_data$acc_tag, 
+                      tag_paq_combined_data$paq_diff, 
+                      method = "pearson", 
+                      use = "complete.obs")
+
+# 打印相关性结果
+print(paste("Subscale:", subscale_type))
+print(paste("Correlation between acc_tag and mean_score: ", cor_manual_tag))
+
+
+colors <- brewer.pal(n = 3, name = "Set2")  # Set2 是柔和調色板
+
+# 創建散點圖並添加線性擬合線
+plot <- ggplot(tag_paq_combined_data, aes(x = acc_tag, y = paq_diff)) +
+  geom_point(color = colors[3]) +  # 散點圖的顏色
+  geom_smooth(method = "lm", se = FALSE, size = 0.5) +  # 添加線性擬合線
+  labs(subtitle = paste("Pearson Correlation Coefficient: ", round(cor_manual_tag, 2)),
+       x = "acc tag",  # X 軸標題
+       y = paste("PAQ Difference")) +  # Y 軸標題
+  theme_minimal() +
+  theme(panel.background = element_rect(fill = "white"), 
+        plot.background = element_rect(fill = "white"),
+        plot.title = element_text(face = "bold", size = 14),
+        plot.subtitle = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10))
+
+# 顯示圖表
+print(plot)
+```
+
+```{r}
+# PAQ_Manual Affect Labeling post-pre and tag behavior (手動標記量)
+tag_manual_data <- tag_data %>%
+  filter(pattern == "Moodtag")
+
+# 假設 tag_manual_data 是你的數據框
+tag_manual_data$acc_tag <- 1-(tag_manual_data$modified_moodtag_count + tag_manual_data$manual_tag_count) / tag_manual_data$total_moodtag_count
+
+# 将 tag_moodtag_data 中的 unique_id 列重命名为 user_id
+tag_manual_data_renamed <- tag_manual_data %>%
+  rename(user_id = unique_id)
+
+print(tag_manual_data)
+
+# 按照 subscale 分组，分别计算正面和负面的相关性
+for (subscale_type in c("Positive", "Negative")) {
+
+  # PANAS只取 Manual Affect Labeling	 的前後差異
+  mode_panas_data <- long_panas_data %>%
+    filter(mode == "Moodtag" & subscale == subscale_type)
+  
+  # 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+  modetag_panas_diff <- mode_panas_data %>%
+    group_by(user_id, question_number) %>%
+    pivot_wider(names_from = time, values_from = score) %>%
+    mutate(diff = post - pre) 
+  
+  # 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+  panas_summary <- modetag_panas_diff %>%
+    group_by(user_id, subscale) %>%
+    summarise(mean_score = sum(diff), .groups = 'drop')
+  
+  tag_paq_combined_data <- merge(panas_summary, tag_manual_data_renamed, by = c("user_id"))
+  
+  print(tag_paq_combined_data)
+  
+  # 計算關聯性
+  cor_manual_tag <- cor(tag_paq_combined_data$acc_tag, 
+                        tag_paq_combined_data$mean_score, 
+                        method = "pearson", 
+                        use = "complete.obs")
+  
+  cor_manual_tag_test <- cor.test(tag_paq_combined_data$acc_tag,
+                                tag_paq_combined_data$mean_score)
+  
+  # 打印相关性结果
+  print(paste("Correlation between acc_tag and mean_score: ", cor_manual_tag))
+  
+  print(cor_manual_tag_test)
+  
+  colors <- brewer.pal(n = 3, name = "Set2")  # Set2 是柔和調色板
+  
+  # 創建散點圖並添加線性擬合線
+  plot <- ggplot(tag_paq_combined_data, aes(x = acc_tag, y = mean_score)) +
+    geom_point(color = colors[3]) +  # 散點圖的顏色
+    geom_smooth(method = "lm", se = FALSE, size = 0.5) +  # 添加線性擬合線
+    labs(subtitle = paste(subscale_type , " Pearson Correlation Coefficient: ", round(cor_manual_tag, 2)),
+         x = "acc tag",  # X 軸標題
+         y = paste("PANAS Difference")) +  # Y 軸標題
+    theme_minimal() +
+    theme(panel.background = element_rect(fill = "white"), 
+          plot.background = element_rect(fill = "white"),
+          plot.title = element_text(face = "bold", size = 14),
+          plot.subtitle = element_text(size = 12),
+          axis.title = element_text(size = 12),
+          axis.text = element_text(size = 10))
+  
+  # 顯示圖表
+  print(plot)
+  
+    # 保存图表到指定路径
+  ggsave(filename = paste0("E:/Research/part/圖表/" , subscale_type, " and ACC tag Pearson Correlation Coefficient", ".png"), 
+         plot = plot, 
+         width = 8, 
+         height = 6, 
+         dpi = 300)
+  
+  # 建立模型 (假設已執行)
+  manual_tag_lm <- lm(mean_score ~ acc_tag, data = tag_paq_combined_data)
+  
+  print(summary(manual_tag_lm))
+}
+```
+
+
+```{r}
+
+# 對每個mode進行分組並創建單獨的圖表
+modes <- unique(long_paq_data$mode)
+for (m in modes) {
+  # 将长格式转为宽格式，将time (post和pre) 作为列
+  paq_wide <- long_paq_data %>%
+    pivot_wider(names_from = time, values_from = score)
+
+  # 计算 post - neutral 的差值
+  post_paq_data <- paq_wide %>%
+    filter(mode == m)%>%
+    mutate(diff = post - neutral)
+  
+  paq_summary <- post_paq_data %>%
+    group_by(user_id) %>%
+    summarise(mean_score = sum(diff), .groups = 'drop')
+  
+  # PANAS只取 Manual Affect Labeling	 的前後差異
+  mode_panas_data <- long_panas_data %>%
+    filter(mode == m)
+  
+  # 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+  modetag_panas_diff <- mode_panas_data %>%
+    group_by(user_id, question_number) %>%
+    pivot_wider(names_from = time, values_from = score) %>%
+    mutate(diff = post - pre) 
+  
+  # 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+  panas_summary <- modetag_panas_diff %>%
+    group_by(user_id, subscale) %>%
+    summarise(mean_score = sum(diff), .groups = 'drop')
+
+  # 合併PANAS和TPA數據
+  panas_paq_combined_data <- merge(panas_summary,paq_summary, by = c("user_id"))
+  
+  # 計算正面和負面情緒下的相關性
+  correlation_results_positive <- panas_paq_combined_data %>%
+    filter(subscale == "Positive") %>%
+    summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+  correlation_results_negative <- panas_paq_combined_data %>%
+    filter(subscale == "Negative") %>%
+    summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+  
+  # 計算正向情緒的相關性並進行顯著性檢定
+  cor_test_positive <- cor.test(
+    x = panas_paq_combined_data %>% filter(subscale == "Positive") %>% pull(mean_score.x),
+    y = panas_paq_combined_data %>% filter(subscale == "Positive") %>% pull(mean_score.y),
+    method = "pearson"
+  )
+  
+  # 計算負向情緒的相關性並進行顯著性檢定
+  cor_test_negative <- cor.test(
+    x = panas_paq_combined_data %>% filter(subscale == "Negative") %>% pull(mean_score.x),
+    y = panas_paq_combined_data %>% filter(subscale == "Negative") %>% pull(mean_score.y),
+    method = "pearson"
+  )
+  
+  # 查看檢定結果
+  print(cor_test_positive)
+  print(cor_test_negative)
+  
+  # 確保 subscale 為因子類型
+  panas_paq_combined_data$subscale <- as.factor(panas_paq_combined_data$subscale)
+  
+  # 確保 diff.y 是數值型
+  panas_paq_combined_data$mean_score.x <- as.numeric(panas_paq_combined_data$mean_score.x)
+  panas_paq_combined_data$mean_score.y <- as.numeric(panas_paq_combined_data$mean_score.y)
+  print(panas_paq_combined_data)
+  
+  lm_results <- lm(mean_score.x ~ mean_score.y + subscale, data = panas_paq_combined_data)
+  print(summary(lm_results))
+    # ANOVA 分析
+  anova_results <- aov(mean_score.x ~ mean_score.y * subscale, data = panas_paq_combined_data)
+  print(summary(anova_results))
+  
+  # 進行事後檢定，使用 Tukey HSD
+  tukey_results <- TukeyHSD(anova_results)
+  print(tukey_results)
+  
+  print("-------------------------------------") 
+  # 创建相关性标签
+  positive_corr_label <- paste("r =", round(correlation_results_positive$correlation, 2))
+  negative_corr_label <- paste("r =", round(correlation_results_negative$correlation, 2))
+
+  
+  # 创建图表对象，分别显示正面和负面情绪
+  plot <- ggplot(panas_paq_combined_data, aes(x = mean_score.x, y = mean_score.y, color = subscale)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+    labs(title = paste("Scatter Plot of PANAS (post - pre) and PAQ (post - neutral) on ", m),
+         x = "PANAS Score (post - pre)",
+         y = "PAQ Score (post - neutral)",
+         color = "Emotion Type") +
+    theme_minimal() +
+    facet_wrap(~ subscale, scales = "free", labeller = labeller(subscale = c("Positive" = paste("Positive", positive_corr_label),
+                                                                           "Negative" = paste("Negative", negative_corr_label)))) +  # 添加相关性标签到子标题
+    theme(
+      panel.background = element_rect(fill = "white"), 
+      plot.background = element_rect(fill = "white"),
+      axis.text.x = element_text(size = 10),
+      axis.text.y = element_text(size = 10),
+      strip.text = element_text(size = 12)
+    )
+  # 在R中显示图表
+  print(plot)
+  
+  # 保存图表到指定路径
+  ggsave(filename = paste0("E:/Research/part/圖表/positive_negative_paq_panas_diff_scatterplot_", m, ".png"), 
+         plot = plot, 
+         width = 10, 
+         height = 5, 
+         dpi = 300)
+  
+  print("LM start-------------------------------------") 
+    # 建立模型 (假設已執行)
+  panas_paq_tag_lm <- lm(mean_score.x ~ mean_score.y + subscale, data = panas_paq_combined_data)
+  
+  print(summary(panas_paq_tag_lm))
+  print("LM end-------------------------------------") 
+}
+```
+
+```{r}
+# 對每個mode進行分組並創建單獨的圖表
+modes <- unique(long_paq_data$mode)
+for (m in modes) {
+  # 篩選出當前 mode 的數據
+  post_paq_data <- long_paq_data %>%
+    filter(mode == m & time == "post")
+  
+  paq_summary <- post_paq_data %>%
+    group_by(user_id) %>%
+    summarise(mean_score = sum(score), .groups = 'drop')
+  
+  # PANAS只取 Manual Affect Labeling	 的前後差異
+  mode_panas_data <- long_panas_data %>%
+    filter(mode == m)
+  
+  # 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+  modetag_panas_diff <- mode_panas_data %>%
+    group_by(user_id, question_number) %>%
+    pivot_wider(names_from = time, values_from = score) %>%
+    mutate(diff = post - pre) 
+  
+  # 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+  panas_summary <- modetag_panas_diff %>%
+    group_by(user_id, subscale) %>%
+    summarise(mean_score = sum(diff), .groups = 'drop')
+
+  # 合併PANAS和TPA數據
+  panas_paq_combined_data <- merge(panas_summary,paq_summary, by = c("user_id"))
+  
+  # 計算正面和負面情緒下的相關性
+  correlation_results_positive <- panas_paq_combined_data %>%
+    filter(subscale == "Positive") %>%
+    summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+  
+  correlation_results_negative <- panas_paq_combined_data %>%
+    filter(subscale == "Negative") %>%
+    summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+  
+  
+  # 計算正向情緒的相關性並進行顯著性檢定
+  cor_test_positive <- cor.test(
+    x = panas_paq_combined_data %>% filter(subscale == "Positive") %>% pull(mean_score.x),
+    y = panas_paq_combined_data %>% filter(subscale == "Positive") %>% pull(mean_score.y),
+    method = "pearson"
+  )
+  
+  # 計算負向情緒的相關性並進行顯著性檢定
+  cor_test_negative <- cor.test(
+    x = panas_paq_combined_data %>% filter(subscale == "Negative") %>% pull(mean_score.x),
+    y = panas_paq_combined_data %>% filter(subscale == "Negative") %>% pull(mean_score.y),
+    method = "pearson"
+  )
+  
+  # 查看檢定結果
+  print(cor_test_positive)
+  print(cor_test_negative)
+  
+  # 確保 subscale 為因子類型
+  panas_paq_combined_data$subscale <- as.factor(panas_paq_combined_data$subscale)
+  
+  # 確保 mean_score.y 是數值型
+  panas_paq_combined_data$mean_score.x <- as.numeric(panas_paq_combined_data$mean_score.x)
+  panas_paq_combined_data$mean_score.y <- as.numeric(panas_paq_combined_data$mean_score.y)
+  print(panas_paq_combined_data)
+  
+  lm_results <- lm(mean_score.x ~ mean_score.y + subscale, data = panas_paq_combined_data)
+  print(summary(lm_results))
+    # ANOVA 分析
+  anova_results <- aov(mean_score.x ~ mean_score.y * subscale, data = panas_paq_combined_data)
+  print(summary(anova_results))
+  
+  # 進行事後檢定，使用 Tukey HSD
+  tukey_results <- TukeyHSD(anova_results)
+  print(tukey_results)
+  
+  print("-------------------------------------") 
+  # 创建相关性标签
+  positive_corr_label <- paste("r =", round(correlation_results_positive$correlation, 2))
+  negative_corr_label <- paste("r =", round(correlation_results_negative$correlation, 2))
+
+  
+  # 创建图表对象，分别显示正面和负面情绪
+  plot <- ggplot(panas_paq_combined_data, aes(x = mean_score.x, y = mean_score.y, color = subscale)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+    labs(title = paste("Scatter Plot of PANAS (post - pre) and PAQ score on ", m),
+         x = "PANAS Score (post - pre)",
+         y = "PAQ Score",
+         color = "Emotion Type") +
+    theme_minimal() +
+    facet_wrap(~ subscale, scales = "free", labeller = labeller(subscale = c("Positive" = paste("Positive", positive_corr_label),
+                                                                           "Negative" = paste("Negative", negative_corr_label)))) +  # 添加相关性标签到子标题
+    theme(
+      panel.background = element_rect(fill = "white"), 
+      plot.background = element_rect(fill = "white"),
+      axis.text.x = element_text(size = 10),
+      axis.text.y = element_text(size = 10),
+      strip.text = element_text(size = 12)
+    )
+  # 在R中显示图表
+  print(plot)
+  
+  # 保存图表到指定路径
+  ggsave(filename = paste0("E:/Research/part/圖表/positive_negative_paq_panas_scatterplot_", m, ".png"), 
+         plot = plot, 
+         width = 10, 
+         height = 5, 
+         dpi = 300)
+  
+  print("LM start-------------------------------------") 
+    # 建立模型 (假設已執行)
+  panas_paq_tag_lm <- lm(mean_score.x ~ mean_score.y + subscale, data = panas_paq_combined_data)
+  
+  print(summary(panas_paq_tag_lm))
+  print("LM end-------------------------------------") 
+}
+```
+
+```{r}
+# 篩選出當前 mode 的數據
+  post_paq_data <- long_paq_data %>%
+    filter(time == "post")
+  
+  paq_summary <- post_paq_data %>%
+    group_by(user_id, mode) %>%
+    summarise(mean_score = sum(score), .groups = 'drop')
+  
+  # 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+  modetag_panas_diff <- long_panas_data %>%
+    group_by(user_id, question_number, mode) %>%
+    pivot_wider(names_from = time, values_from = score) %>%
+    mutate(diff = post - pre) 
+  
+  # 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+  panas_summary <- modetag_panas_diff %>%
+    group_by(user_id, subscale, mode) %>%
+    summarise(mean_score = sum(diff), .groups = 'drop')
+
+  # 合併PANAS和PAQ數據
+  panas_paq_combined_data <- merge(panas_summary,paq_summary, by = c("user_id","mode"))
+  
+  # 確保 subscale 為因子類型
+  panas_paq_combined_data$subscale <- as.factor(panas_paq_combined_data$subscale)
+  
+  # 確保 mean_score.y 是數值型
+  panas_paq_combined_data$mean_score.x <- as.numeric(panas_paq_combined_data$mean_score.x)
+  panas_paq_combined_data$mean_score.y <- as.numeric(panas_paq_combined_data$mean_score.y)
+  print(panas_paq_combined_data)
+  
+  # ANOVA 分析
+  anova_results <- aov(mean_score.x ~ mean_score.y * mode, data = panas_paq_combined_data)
+  print(summary(anova_results))
+  
+  # 進行事後檢定，使用 Tukey HSD
+  tukey_results <- TukeyHSD(anova_results)
+  print(tukey_results)
+  
+```
+
+```{r}
+# 對每個mode進行分組並創建單獨的圖表
+subscales <- unique(long_panas_data$subscale)
+
+for (s in subscales) {
+  # 篩選出當前 mode 的數據
+  post_paq_data <- long_paq_data %>%
+    filter(time == "post")
+  
+  paq_summary <- post_paq_data %>%
+    group_by(user_id,mode) %>%
+    summarise(mean_score = sum(score), .groups = 'drop')
+
+  # 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+  subtag_panas_diff <- long_panas_data %>%
+    filter(subscale == s) %>%
+    group_by(user_id, question_number,mode) %>%
+    pivot_wider(names_from = time, values_from = score) %>%
+    mutate(diff = post - pre) 
+  
+  # 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+  panas_summary <- subtag_panas_diff %>%
+    group_by(user_id, subscale,mode) %>%
+    summarise(mean_score = sum(diff), .groups = 'drop')
+
+  # 合併PANAS和TPA數據，加入 mode
+  panas_paq_combined_data <- merge(panas_summary, paq_summary, by = c("user_id","mode"))
+  panas_paq_combined_data$subscale <- s  # 加入 mode 變數
+  
+  # 確保 subscale 為因子類型
+  panas_paq_combined_data$subscale <- as.factor(s)
+  
+  # 確保 mean_score.y 是數值型
+  panas_paq_combined_data$mean_score.x <- as.numeric(panas_paq_combined_data$mean_score.x)
+  panas_paq_combined_data$mean_score.y <- as.numeric(panas_paq_combined_data$mean_score.y)
+  
+  # 計算每個模式的相關性
+  correlation_results <- panas_paq_combined_data %>%
+    group_by(mode) %>%
+    summarise(
+      corr = cor(mean_score.x[subscale == s], mean_score.y[subscale == s], method = "pearson"),
+    p_value = cor.test(mean_score.x[subscale == s], mean_score.y[subscale == s])$p.value,
+    .groups = 'drop'
+  ) %>%
+  mutate(corr_label = paste("r =", round(corr, 2), ", p =", round(p_value, 3)))
+
+  
+    # 將 correlation_results 與原數據合併，這樣每個模式的相關性標籤都會被保存在數據中
+  panas_paq_combined_data <- merge(panas_paq_combined_data, correlation_results, by = "mode")
+
+  
+  # 畫圖
+  plot <- ggplot(panas_paq_combined_data, aes(x = mean_score.x, y = mean_score.y, color = mode)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+    labs(title = paste("Scatter Plot of PANAS (post - pre) and PAQ score for ", s),
+         x = "PANAS Score (post - pre)",
+         y = "PAQ Score",
+         color = "Mode") +
+    theme_minimal() +
+    facet_wrap(~ mode, scales = "free") + 
+    theme(
+      panel.background = element_rect(fill = "white"), 
+      plot.background = element_rect(fill = "white"),
+      axis.text.x = element_text(size = 10),
+      axis.text.y = element_text(size = 10),
+      strip.text = element_text(size = 12)
+    ) +
+      geom_text(aes(x = Inf, y = Inf, label = corr_label), 
+            hjust = 1.1, vjust = 1.1, color = "blue", inherit.aes = FALSE)
+  
+  # 在R中显示图表
+  print(plot)
+  
+  # 保存圖表到文件
+  ggsave(filename = paste0("E:/Research/part/圖表/Scatter Plot of PANAS (post - pre) and PAQ neutral for_", s, ".png"), 
+         plot = plot, 
+         width = 12,   # 寬度（單位：英寸）
+         height = 4,   # 高度（單位：英寸）
+         dpi = 300)    # 像素密度
+  
+  # 確保 subscale 為因子類型
+  panas_paq_combined_data$subscale <- as.factor(panas_paq_combined_data$subscale)
+  
+  # 確保 mean_score.y 是數值型
+  panas_paq_combined_data$mean_score.x <- as.numeric(panas_paq_combined_data$mean_score.x)
+  panas_paq_combined_data$mean_score.y <- as.numeric(panas_paq_combined_data$mean_score.y)
+  print(panas_paq_combined_data)
+  
+  # 進行二因子 ANOVA，加入 mode 作為獨立變數
+  anova_results <- aov(mean_score.x ~ mean_score.y * mode, data = panas_paq_combined_data)
+  print(summary(anova_results))
+  
+  # 進行事後檢定，使用 Tukey HSD
+  tukey_results <- TukeyHSD(anova_results)
+  print(tukey_results)
+  
+  print("-------------------------------------") 
+    
+}
+
+```
+
+
+```{r}
+# 對每個mode進行分組並創建單獨的圖表
+subscales <- unique(long_panas_data$subscale)
+
+for (s in subscales) {
+   # 将长格式转为宽格式，将time (post和pre) 作为列
+  paq_wide <- long_paq_data %>%
+    pivot_wider(names_from = time, values_from = score)
+
+  # 计算 post - neutral 的差值
+  post_paq_data <- paq_wide %>%
+    mutate(diff = post - neutral)
+  
+  paq_summary <- post_paq_data %>%
+    group_by(user_id,mode) %>%
+    summarise(mean_score = sum(diff), .groups = 'drop')
+
+  # 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+  subtag_panas_diff <- long_panas_data %>%
+    filter(subscale == s) %>%
+    group_by(user_id, question_number,mode) %>%
+    pivot_wider(names_from = time, values_from = score) %>%
+    mutate(diff = post - pre) 
+  
+  # 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+  panas_summary <- subtag_panas_diff %>%
+    group_by(user_id, subscale,mode) %>%
+    summarise(mean_score = sum(diff), .groups = 'drop')
+
+  # 合併PANAS和TPA數據，加入 mode
+  panas_paq_combined_data <- merge(panas_summary, paq_summary, by = c("user_id","mode"))
+  panas_paq_combined_data$subscale <- s  # 加入 mode 變數
+  
+    
+  # 計算每個模式的相關性
+  correlation_results <- panas_paq_combined_data %>%
+    group_by(mode) %>%
+    summarise(
+      corr = cor(mean_score.x[subscale == s], mean_score.y[subscale == s], method = "pearson"),
+      p_value = cor.test(mean_score.x[subscale == s], mean_score.y[subscale == s])$p.value,
+      .groups = 'drop'
+    )%>%
+    mutate(corr_label = paste("r =", round(corr, 2), ", p =", round(p_value, 3)))
+
+  
+  # 將 correlation_results 與原數據合併，這樣每個模式的相關性標籤都會被保存在數據中
+  panas_paq_combined_data <- merge(panas_paq_combined_data, correlation_results, by = "mode")
+
+  
+  # 畫圖
+  plot <- ggplot(panas_paq_combined_data, aes(x = mean_score.x, y = mean_score.y, color = mode)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+    labs(title = paste("Scatter Plot of PANAS (post - pre) and PAQ (post - neutral) for ", s),
+         x = "PANAS Score (post - pre)",
+         y = "PAQ Score (post - neutral)",
+         color = "control") +
+    theme_minimal() +
+    facet_wrap(~ mode, scales = "free") + 
+    theme(
+      panel.background = element_rect(fill = "white"), 
+      plot.background = element_rect(fill = "white"),
+      axis.text.x = element_text(size = 10),
+      axis.text.y = element_text(size = 10),
+      strip.text = element_text(size = 12)
+    )+
+  geom_text(aes(x = Inf, y = Inf, label = corr_label), 
+            hjust = 1.1, vjust = 1.1, color = "blue", inherit.aes = FALSE)
+
+  # 在R中显示图表
+  print(plot)
+    # 保存圖表到文件
+  ggsave(filename = paste0("E:/Research/part/圖表/Scatter Plot of PANAS (post - pre) and PAQ (post - neutral) for_", s, ".png"), 
+         plot = plot, 
+         width = 12,   # 寬度（單位：英寸）
+         height = 4,   # 高度（單位：英寸）
+         dpi = 300)    # 像素密度
+  
+  # 確保 subscale 為因子類型
+  panas_paq_combined_data$subscale <- as.factor(panas_paq_combined_data$subscale)
+  
+  # 確保 mean_score.y 是數值型
+  panas_paq_combined_data$mean_score.x <- as.numeric(panas_paq_combined_data$mean_score.x)
+  panas_paq_combined_data$mean_score.y <- as.numeric(panas_paq_combined_data$mean_score.y)
+  print(panas_paq_combined_data)
+  
+  
+  print(paste("subscale = ", s))
+  # 進行二因子 ANOVA，加入 mode 作為獨立變數
+  anova_results <- aov(mean_score.x ~ mean_score.y * mode, data = panas_paq_combined_data)
+  print(summary(anova_results))
+  
+  # 進行事後檢定，使用 Tukey HSD
+  tukey_results <- TukeyHSD(anova_results)
+  print(tukey_results)
+  print("lm---------")
+  lm_results <- lm(mean_score.x ~ mean_score.y + mode, data = panas_paq_combined_data)
+  print(lm_results)
+  print("-------------------------------------") 
+
+}
+```
+```{r}
+# 假設 '正面情緒' 是某個特定的 subscale，例如 "Positive"
+# 過濾出正面情緒和Moodtag模式的數據
+filtered_data <- long_panas_data %>%
+  filter(subscale == "Positive", mode == "Moodtag")  # 假設 Positive 是正面情緒
+
+# 轉換為寬格式，計算 post - pre 的差異
+subtag_panas_diff <- filtered_data %>%
+  group_by(user_id, question_number, mode) %>%
+  pivot_wider(names_from = time, values_from = score) %>%
+  mutate(diff = post - pre) 
+
+# 計算PANAS的正面情緒平均值
+panas_summary <- subtag_panas_diff %>%
+  group_by(user_id, subscale, mode) %>%
+  summarise(mean_score = sum(diff), .groups = 'drop')
+
+# 合併PANAS和PAQ數據，加入 mode
+panas_paq_combined_data <- merge(panas_summary, paq_summary, by = c("user_id", "mode"))
+
+# 計算每個模式的相關性
+correlation_results <- panas_paq_combined_data %>%
+  group_by(mode) %>%
+  summarise(
+    corr = cor(mean_score.x, mean_score.y, method = "pearson"),
+    p_value = cor.test(mean_score.x, mean_score.y)$p.value,
+    .groups = 'drop'
+  ) %>%
+  mutate(corr_label = paste("r =", round(corr, 2), ", p =", round(p_value, 3)))
+
+# 合併相關性結果
+panas_paq_combined_data <- merge(panas_paq_combined_data, correlation_results, by = "mode")
+
+# 畫圖
+plot <- ggplot(panas_paq_combined_data, aes(x = mean_score.x, y = mean_score.y, color = mode)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+  labs(title = "Scatter Plot of Positive PANAS (post - pre) and PAQ (post - neutral) for Moodtag",
+       x = "PANAS Positive Score (post - pre)",
+       y = "PAQ Score (post - neutral)",
+       color = "Mode") +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  ) +
+  # 添加相关性和p值文本
+  geom_text(aes(x = Inf, y = Inf, label = corr_label), 
+            hjust = 1.1, vjust = 1.1, color = "blue", inherit.aes = FALSE)
+
+# 顯示圖表
+print(plot)
+
+# 保存圖表
+ggsave(filename = "E:/Research/part/圖表/Positive_PANAS_Moodtag_Scatterplot.png", 
+       plot = plot, 
+       width = 8, 
+       height = 6, 
+       dpi = 300)
+
+# 顯示結合數據的結果
+print(panas_paq_combined_data)
+
+# 進行二因子 ANOVA，加入 mode 作為獨立變數
+anova_results <- aov(mean_score.x ~ mean_score.y * mode, data = panas_paq_combined_data)
+print(summary(anova_results))
+
+# 進行事後檢定，使用 Tukey HSD
+tukey_results <- TukeyHSD(anova_results)
+print(tukey_results)
+
+```
+
+```{r}
+# PAQ只取moodtag post
+moodtag_paq_data <- long_paq_data %>%
+  filter(mode == "Moodtag")
+
+paq_summary <- moodtag_paq_data %>%
+  group_by(user_id, time) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- paq_summary %>%
+  pivot_wider(names_from = time, values_from = mean_score)
+
+# 计算 post - neutral 的差值
+paq_wide <- paq_wide %>%
+  mutate(mean_score = post - neutral)
+
+# PANAS只取Moodtag的前後差異
+moodtag_panas_data <- long_panas_data %>%
+  filter(mode == "Moodtag")
+
+# 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+moodtag_panas_diff <- moodtag_panas_data %>%
+  group_by(user_id, question_number) %>%
+  pivot_wider(names_from = time, values_from = score) %>%
+  mutate(diff = post - pre) 
+
+# 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+panas_summary <- moodtag_panas_diff %>%
+  group_by(user_id, subscale) %>%
+  summarise(mean_score = sum(diff), .groups = 'drop')
+
+# 合併PANAS和TPA數據
+combined_data <- merge(panas_summary, paq_wide, by = c("user_id"))
+
+print(combined_data)
+
+# 計算正面和負面情緒下的相關性
+correlation_results_positive <- combined_data %>%
+  filter(subscale == "Positive") %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+correlation_results_negative <- combined_data %>%
+  filter(subscale == "Negative") %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+# 輸出正負情緒的相關性結果
+print("Positive Emotion Correlation:")
+print(correlation_results_positive)
+
+print("Negative Emotion Correlation:")
+print(correlation_results_negative)
+
+# 创建图表对象，分别显示正面和负面情绪
+plot <- ggplot(combined_data, aes(x = mean_score.x, y = mean_score.y, color = subscale)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+  labs(title = "Scatter Plot of PANAS (post - pre) and PAQ moodtag (post - neutral)",
+       x = "PANAS Score (post - pre)",
+       y = "PAQ Score (post - neutral)",
+       color = "Emotion Type") +
+  theme_minimal() +
+  facet_wrap(~ subscale, scales = "free") +  # 使用facet_wrap来分别绘制正面和负面情绪
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  )
+
+# 在R中显示图表
+print(plot)
+
+# 保存图表到指定路径
+ggsave(filename = "E:/Research/part/圖表/positive_negative_paq_panas_scatterplot.png", 
+       plot = plot, 
+       width = 10, 
+       height = 8, 
+       dpi = 300)
+```
+
+```{r}
+# PAQ只取moodtag post
+moodtag_paq_data <- long_paq_data %>%
+  filter(mode == "Moodtag")
+
+paq_summary <- moodtag_paq_data %>%
+  group_by(user_id, time) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- paq_summary %>%
+  pivot_wider(names_from = time, values_from = mean_score)
+
+# 计算 post - neutral 的差值
+paq_wide <- paq_wide %>%
+  mutate(mean_score = post - neutral)
+
+# 合併PANAS和TPA數據
+combined_data <- merge(paq_wide, tpa_summary, by = c("user_id"))
+
+print(combined_data)
+
+# 計算正面情緒下的相關性及其檢定結果
+correlation_results_trust <- combined_data %>%
+  filter(subscale == "Trust") %>%
+  summarise(
+    correlation = cor(mean_score.x, mean_score.y, method = "pearson"),
+    p_value = cor.test(mean_score.x, mean_score.y)$p.value,
+    .groups = "drop"
+  )
+
+# 計算負面情緒下的相關性及其檢定結果
+correlation_results_distrust <- combined_data %>%
+  filter(subscale == "Distrust") %>%
+  summarise(
+    correlation = cor(mean_score.x, mean_score.y, method = "pearson"),
+    p_value = cor.test(mean_score.x, mean_score.y)$p.value,
+    .groups = "drop"
+  )
+
+# 輸出正負情緒的相關性結果
+print("Positive Emotion Correlation:")
+print(correlation_results_trust)
+
+print("Negative Emotion Correlation:")
+print(correlation_results_distrust)
+
+# 创建图表对象，分别显示正面和负面情绪
+plot <- ggplot(combined_data, aes(x = mean_score.x, y = mean_score.y, color = subscale)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+  labs(title = "Scatter Plot of TPA and PAQ moodtag (post - neutral)",
+       x = "PAQ Score (post - neutral)",
+       y = "TPA Score",
+       color = "Emotion Type") +
+  theme_minimal() +
+  facet_wrap(~ subscale, scales = "free") +  # 使用facet_wrap来分别绘制正面和负面情绪
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  )
+
+# 在R中显示图表
+print(plot)
+
+# 保存图表到指定路径
+ggsave(filename = "E:/Research/part/圖表/TPA_PAQ_moodtag_positive_negative_paq_panas_scatterplot.png", 
+       plot = plot, 
+       width = 10, 
+       height = 8, 
+       dpi = 300)
+```
+
+```{r}
+# 筛选Distrust情绪的数据
+combined_data_distrust <- combined_data %>%
+  filter(subscale == "Distrust")
+
+# 计算相关性和p-value
+correlation_results_distrust <- combined_data_distrust %>%
+  summarise(
+    correlation = cor(mean_score.x, mean_score.y, method = "pearson"),
+    p_value = cor.test(mean_score.x, mean_score.y)$p.value,
+    .groups = "drop"
+  )
+
+# 输出相关性和p-value
+print("Negative Emotion Correlation:")
+print(correlation_results_distrust)
+
+# 创建Distrust的散点图，显示相关性和p-value
+plot_distrust <- ggplot(combined_data_distrust, aes(x = mean_score.x, y = mean_score.y)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+  labs(title = paste("Scatter Plot of TPA and PAQ (Distrust) for Moodtag (post - neutral)"),
+       x = "PAQ Score (post - neutral)",
+       y = "TPA Score") +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  ) +
+  # 在图表上添加相关性和p-value的文本
+  geom_text(aes(x = Inf, y = Inf, label = paste("r =", round(correlation_results_distrust$correlation, 2), 
+                                                ", p =", round(correlation_results_distrust$p_value, 3))),
+            hjust = 1.1, vjust = 1.1, color = "blue", inherit.aes = FALSE)
+
+# 在R中显示图表
+print(plot_distrust)
+
+# 保存图表到指定路径
+ggsave(filename = "E:/Research/part/圖表/TPA_PAQ_moodtag_distrust_scatterplot.png", 
+       plot = plot_distrust, 
+       width = 10, 
+       height = 8, 
+       dpi = 300)
+```
+
+
+```{r}
+# PAQ只取moodtag post
+moodtag_paq_data <- long_paq_data %>%
+  filter(mode == "Moodtag")
+
+paq_summary <- moodtag_paq_data %>%
+  group_by(user_id, time) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- paq_summary %>%
+  pivot_wider(names_from = time, values_from = mean_score)
+
+# 计算 post - neutral 的差值
+paq_wide <- paq_wide %>%
+  mutate(mean_score = post - neutral)
+
+
+# 合併PANAS和TPA數據
+combined_data <- merge(paq_wide, tpa_summary, by = c("user_id"))
+
+print(combined_data)
+
+# 相關性
+correlation_results_trust <- combined_data %>%
+  filter(subscale == "Trust") %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+correlation_results_distrust <- combined_data %>%
+  filter(subscale == "Distrust") %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+# 輸出相關性結果
+print(correlation_results_trust)
+print(correlation_results_distrust)
+
+# 创建图表对象
+plot <- ggplot(combined_data, aes(x = mean_score.x, y = mean_score.y, color = subscale)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+  labs(title = "Scatter Plot of TPA and PAQ moodtag (post - neutral)",
+       x = "PAQ Score",
+       y = "TPA Score",
+       color = "Emotion Type") +
+  theme_minimal() +
+  facet_wrap(~ subscale, scales = "free") +  # 使用facet_wrap来分别绘制正面和负面情绪
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  )
+
+# 在R中显示图表
+print(plot)
+```
+
+
+```{r}
+# 定義每個子量表的問題號碼
+n_ddf_questions <- c(1, 7, 13, 19,2, 8, 14, 20)
+p_ddf_questions <- c(4, 10, 16, 22,5, 11, 17, 23)
+g_eot_questions <- c(3, 6, 9, 12, 15, 18, 21, 24)
+
+# 將問題號碼對應到子量表
+paq_data <- paq_data %>%
+  mutate(subscale = case_when(
+    question_number %in% n_ddf_questions ~ "N-DDF",
+    question_number %in% p_ddf_questions ~ "P-DDF",
+    question_number %in% g_eot_questions ~ "G-EOT"
+  ))
+
+# 將數據轉換為長格式
+long_paq_data <- paq_data %>%
+  pivot_longer(cols = c(neutral, post), names_to = "time", values_to = "score")
+
+# PAQ只取moodtag post
+moodtag_paq_data <- long_paq_data %>%
+  filter(mode == "Moodtag")
+
+
+print(moodtag_paq_data)
+
+# 計算各子量表的平均分
+paq_summary <- moodtag_paq_data %>%
+  group_by(user_id, time, subscale) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- paq_summary %>%
+  pivot_wider(names_from = time, values_from = mean_score)
+
+# 计算 post - neutral 的差值
+paq_wide <- paq_wide %>%
+  mutate(mean_score = post - neutral)
+
+# 合併PANAS和TPA數據
+combined_data <- merge(paq_wide, tpa_summary, by = c("user_id"))
+
+# 计算每个子量表与TPA的相关性，并绘制图表
+subscales_x <- unique(paq_summary$subscale)  # PAQ的子量表
+subscales_y <- c("Trust", "Distrust")          # TPA的子量表
+
+# 存储结果的列表
+correlation_results <- list()
+plots <- list()
+
+for (subscale_x in subscales_x) {
+  # 过滤数据
+  subscale_data_x <- combined_data %>%
+    filter(subscale.x == !!subscale_x)
+
+  # 对于每个PAQ子量表，再对Trust和Distrust进行处理
+  for (subscale_y in subscales_y) {
+    subscale_data_y <- subscale_data_x %>%
+      filter(subscale.y == !!subscale_y)
+
+    if (nrow(subscale_data_y) > 0) {  # 确保有数据
+      # 计算相关性
+      correlation <- cor(subscale_data_y$mean_score.x, subscale_data_y$mean_score.y, method = "pearson")
+      correlation_results[[paste(subscale_x, subscale_y, sep = "_")]] <- correlation
+      
+      # 创建图表
+      plot <- ggplot(subscale_data_y, aes(x = mean_score.x, y = mean_score.y)) +
+        geom_point() +
+        geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+        labs(title = paste("Scatter Plot of TPA and PAQ -", subscale_x, "vs", subscale_y),
+             x = "PAQ Score (post - neutral)",
+             y = "TPA Score") +
+        theme_minimal() +
+        theme(
+          panel.background = element_rect(fill = "white"), 
+          plot.background = element_rect(fill = "white"),
+          axis.text.x = element_text(size = 10),
+          axis.text.y = element_text(size = 10)
+        )
+      
+      # 存储图表
+      plots[[paste(subscale_x, subscale_y, sep = "_")]] <- plot
+    }
+  }
+}
+
+# 输出每个子量表的相关性结果
+for (key in names(correlation_results)) {
+  print(paste(key, "Correlation:", correlation_results[[key]]))
+}
+
+# 在R中显示图表
+for (key in names(plots)) {
+  print(plots[[key]])
+}
+
+```
+
+```{r}
+# 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+long_panas_diff <- long_panas_data %>%
+  group_by(user_id, question_number, mode) %>%
+  pivot_wider(names_from = time, values_from = score) %>%
+  mutate(diff = post - pre) 
+
+# 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+panas_summary <- long_panas_diff %>%
+  group_by(user_id, subscale, mode) %>%
+  summarise(mean_score = sum(diff), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- long_paq_data %>%
+  pivot_wider(names_from = time, values_from = score)
+
+# 计算 post - neutral 的差值
+post_paq_data <- paq_wide %>%
+  mutate(diff = post - neutral)
+
+paq_summary <- post_paq_data %>%
+  group_by(user_id, mode) %>%
+  summarise(mean_score = sum(diff), .groups = 'drop')
+
+
+print(panas_summary)
+print(paq_summary)
+# 合併PANAS和TPA數據
+combined_data <- merge(panas_summary, paq_wide, by = c("user_id","mode"))
+print(combined_data)
+
+# 對每個mode進行分組並創建單獨的圖表
+modes <- unique(combined_data$mode)
+
+for (m in modes) {
+  # 篩選出當前 mode 的數據
+  mode_data <- combined_data %>%
+    filter(mode == m)
+  
+  # 創建圖表對象
+  plot <- ggplot(mode_data, aes(x = mean_score.x, y = mean_score.y, color = subscale.x)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+    labs(title = paste("Scatter Plot of PANAS (post - pre) and PAQ (post - neutral) -", m),
+         x = "PANAS Score (post - pre)",
+         y = "PAQ Score (post - neutral)",
+         color = "Emotion Type") +
+    theme_minimal() +
+    facet_wrap(~ subscale, scales = "free") +  # 分别绘制正面和负面情绪
+    theme(
+      panel.background = element_rect(fill = "white"), 
+      plot.background = element_rect(fill = "white"),
+      axis.text.x = element_text(size = 10),
+      axis.text.y = element_text(size = 10),
+      strip.text = element_text(size = 12)
+    )
+  
+  # 顯示圖表
+  print(plot)
+  
+  # 保存圖表到指定路徑，以 mode 名稱命名文件
+  ggsave(filename = paste0("E:/Research/part/圖表/", m, "_positive_negative_paq_panas_scatterplot.png"), 
+         plot = plot, 
+         width = 10, 
+         height = 8, 
+         dpi = 300)
+}
+
+
+cor_test <- cor.test(combined_data$mean_score.x, combined_data$mean_score.y, method = "pearson")
+print(cor_test)
+
+regression_model <- lm(mean_score.y ~ mean_score.x, data = combined_data)
+summary(regression_model)
+
+anova_results <- aov(mean_score.y ~ mean_score.x * mode, data = combined_data)
+summary(anova_results)
+
+tukey_results <- TukeyHSD(anova_results)
+print(tukey_results)
+```
+
+
+
+```{r}
+print(long_paq_data)
+
+paq_summary <- long_paq_data %>%
+  group_by(user_id, time, mode) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- paq_summary %>%
+  pivot_wider(names_from = time, values_from = mean_score)
+
+# 计算 post - neutral 的差值
+paq_wide <- paq_wide %>%
+  mutate(mean_score = post - neutral)
+
+# 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+long_panas_data_sum <- long_panas_data %>%
+  group_by(user_id, question_number, mode) %>%
+  pivot_wider(names_from = time, values_from = score) %>%
+  mutate(diff = post - pre) 
+
+# 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+panas_summary <- long_panas_data_sum %>%
+  group_by(user_id, subscale, mode) %>%
+  summarise(mean_score = sum(diff), .groups = 'drop')
+
+# 合併PANAS和TPA數據
+combined_data <- merge(panas_summary, paq_wide, by = c("user_id","mode"))
+
+# 將 PANAS 和 PAQ 的得分差異加入 combined_data
+combined_data <- combined_data %>%
+  mutate(panas_diff = case_when(
+    subscale == "Positive" ~ mean_score.x,
+    subscale == "Negative" ~ mean_score.x
+  ))
+
+print(combined_data)
+
+negative_data <- combined_data %>%
+  filter(subscale == "Negative")
+
+# 使用 MANOVA
+manova_results <- manova(cbind(mean_score.x, mean_score.y) ~ mode, data = negative_data)
+summary(manova_results)
+```
+
+```{r}
+# PAQ只取moodtag post
+moodtag_paq_data <- long_paq_data %>%
+  filter(mode == "Moodtag")
+
+paq_summary <- moodtag_paq_data %>%
+  group_by(user_id, time) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- paq_summary %>%
+  pivot_wider(names_from = time, values_from = mean_score)
+
+# 计算 post - neutral 的差值
+paq_wide <- paq_wide %>%
+  mutate(mean_score = post - neutral)
+
+print(paq_wide)
+
+print(abcct_data_long)
+
+abcct_summary <- abcct_data_long %>%
+  group_by(user_id,communication_tool, positive_or_negative) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+print(abcct_summary)
+
+# 步驟2：計算同一個 user_id 中 Moodtag 減去 common 的分數
+abcct_final_diff <- abcct_summary %>%
+  group_by(user_id, positive_or_negative) %>%
+  spread(communication_tool, mean_score) %>%
+  mutate(mean_score = Moodtag - common) %>%
+  ungroup()
+
+print(abcct_final_diff)
+
+
+# 合併PAQ和ABCCT數據
+combined_data <- merge(paq_wide, abcct_final_diff, by = c("user_id"))
+
+print(combined_data)
+
+# 相關性
+correlation_results_positive <- combined_data %>%
+  filter(positive_or_negative == "Positive") %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+correlation_results_negative <- combined_data %>%
+  filter(positive_or_negative == "Negative") %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+# 輸出相關性結果
+print(correlation_results_positive)
+print(correlation_results_negative)
+
+# 创建图表对象
+plot <- ggplot(combined_data, aes(x = mean_score.x, y = mean_score.y, color = positive_or_negative)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+  labs(title = "Scatter Plot of PAQ moodtag (post - neutral) and ABCCT (Moodtag - common)",
+       x = "PAQ Score",
+       y = "ABCCT (Moodtag - common) Score") +
+  theme_minimal() +
+  facet_wrap(~ positive_or_negative, scales = "free") +  # 使用facet_wrap来分别绘制正面和负面情绪
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  )
+
+# 在R中显示图表
+print(plot)
+```
+```{r}
+# PAQ只取moodtag post
+moodtag_paq_data <- long_paq_data %>%
+  filter(mode == "Moodtag")
+
+paq_summary <- moodtag_paq_data %>%
+  group_by(user_id, time) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- paq_summary %>%
+  pivot_wider(names_from = time, values_from = mean_score)
+
+# 计算 post - neutral 的差值
+paq_wide <- paq_wide %>%
+  mutate(mean_score = post - neutral)
+
+print(paq_wide)
+
+print(abcct_data_long)
+
+abcct_summary <- abcct_data_long %>%
+  group_by(user_id,communication_tool, positive_or_negative) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+print(abcct_summary)
+
+# 步驟2：計算同一個 user_id 中 Moodtag 減去 common 的分數
+abcct_final_diff <- abcct_summary %>%
+  group_by(user_id, positive_or_negative) %>%
+  spread(communication_tool, mean_score) %>%
+  mutate(mean_score = Moodtag) %>%
+  ungroup()
+
+print(abcct_final_diff)
+
+
+# 合併PAQ和ABCCT數據
+combined_data <- merge(paq_wide, abcct_final_diff, by = c("user_id"))
+
+print(combined_data)
+
+# 相關性
+correlation_results_positive <- combined_data %>%
+  filter(positive_or_negative == "Positive") %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+correlation_results_negative <- combined_data %>%
+  filter(positive_or_negative == "Negative") %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+# 輸出相關性結果
+print(correlation_results_positive)
+print(correlation_results_negative)
+
+# 创建图表对象
+plot <- ggplot(combined_data, aes(x = mean_score.x, y = mean_score.y, color = positive_or_negative)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+  labs(title = "Scatter Plot of PAQ moodtag (post - neutral) and Moodtag ABCCT",
+       x = "PAQ Score",
+       y = "Moodtag ABCCT Score") +
+  theme_minimal() +
+  facet_wrap(~ positive_or_negative, scales = "free") +  # 使用facet_wrap来分别绘制正面和负面情绪
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  )
+
+# 在R中显示图表
+print(plot)
+```
+
+```{r}
+# PAQ只取moodtag post
+moodtag_paq_data <- long_paq_data %>%
+  filter(mode == "Moodtag")
+
+paq_summary <- moodtag_paq_data %>%
+  group_by(user_id, time) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- paq_summary %>%
+  pivot_wider(names_from = time, values_from = mean_score)
+
+print(paq_wide)
+
+# 计算 post - neutral 的差值
+paq_wide <- paq_wide %>%
+  mutate(mean_score = post - neutral)
+
+print(abcct_data_long)
+
+abcct_summary <- abcct_data_long %>%
+  filter(communication_tool == "Moodtag") %>%
+  group_by(user_id,communication_tool, positive_or_negative) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 步驟1：先計算每個 user_id 和 communication_tool 中 Positive - Negative 的分數
+abcct_score_diff <- abcct_summary %>%
+  group_by(user_id, communication_tool) %>%
+  summarise(mean_score = mean_score[positive_or_negative == "Positive"] - 
+                            mean_score[positive_or_negative == "Negative"]) %>%
+  ungroup()
+
+print(abcct_score_diff)
+
+
+# 合併PANAS和TPA數據
+combined_data <- merge(paq_wide, abcct_score_diff, by = c("user_id"))
+
+print(combined_data)
+
+# 相關性
+correlation_results_trust <- combined_data %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+# 輸出相關性結果
+print(correlation_results_trust)
+
+# 创建图表对象
+plot <- ggplot(combined_data, aes(x = mean_score.x, y = mean_score.y)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+  labs(title = "Scatter Plot of PAQ moodtag (post - neutral) and ABCCT",
+       x = "PAQ Score",
+       y = "Moodtag ABCCT Score") +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  )
+
+# 在R中显示图表
+print(plot)
+```
+
+```{r}
+# PAQ只取moodtag post
+moodtag_paq_data <- long_paq_data %>%
+  filter(mode == "Moodtag")
+
+paq_summary <- moodtag_paq_data %>%
+  group_by(user_id, time) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 将长格式转为宽格式，将time (post和pre) 作为列
+paq_wide <- paq_summary %>%
+  pivot_wider(names_from = time, values_from = mean_score)
+
+print(paq_wide)
+
+# 计算 post - neutral 的差值
+paq_wide <- paq_wide %>%
+  mutate(mean_score = post - neutral)
+
+abcct_summary <- abcct_data_long %>%
+  group_by(user_id,communication_tool, positive_or_negative) %>%
+  summarise(mean_score = sum(score), .groups = 'drop')
+
+# 步驟1：先計算每個 user_id 和 communication_tool 中 Positive - Negative 的分數
+abcct_score_diff <- abcct_summary %>%
+  group_by(user_id, communication_tool) %>%
+  summarise(score_diff = mean_score[positive_or_negative == "Positive"] - 
+                            mean_score[positive_or_negative == "Negative"]) %>%
+  ungroup()
+
+# 步驟2：計算同一個 user_id 中 Moodtag 減去 common 的分數
+abcct_final_diff <- abcct_score_diff %>%
+  spread(communication_tool, score_diff) %>%
+  mutate(mean_score = Moodtag - common)
+
+print(abcct_final_diff)
+
+
+# 合併PANAS和TPA數據
+combined_data <- merge(paq_wide, abcct_final_diff, by = c("user_id"))
+
+print(combined_data)
+
+# 相關性
+correlation_results_trust <- combined_data %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+# 輸出相關性結果
+print(correlation_results_trust)
+
+# 创建图表对象
+plot <- ggplot(combined_data, aes(x = mean_score.x, y = mean_score.y)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", size = 0.3) +
+  labs(title = "Scatter Plot of PAQ moodtag (post - neutral) and ABCCT (Moodtag - common)",
+       x = "PAQ Score",
+       y = "ABCCT (Moodtag - common) Score") +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  )
+
+# 在R中显示图表
+print(plot)
+
+```
+```{r}
+# PANAS只取Moodtag的前後差異
+moodtag_panas_data <- long_panas_data %>%
+  filter(mode == "Moodtag")
+
+# 依據題號question_number 透過time的不同時間點(post-pre)算出前後差異
+moodtag_panas_diff <- moodtag_panas_data %>%
+  group_by(user_id, question_number) %>%
+  pivot_wider(names_from = time, values_from = score) %>%
+  mutate(diff = post - pre) 
+
+# 計算PANAS的正負情緒平均值，並將 subscale 保留在結果中
+panas_summary <- moodtag_panas_diff %>%
+  group_by(user_id, subscale) %>%
+  summarise(mean_score = sum(diff), .groups = 'drop')
+
+print(panas_summary)
+
+print(abcct_final_diff)
+
+# 合併PANAS和TPA數據
+combined_data <- merge(panas_summary, abcct_final_diff, by = c("user_id"))
+
+print(combined_data)
+
+# 計算不同子量表下的相關性
+correlation_results <- combined_data %>%
+  group_by(subscale) %>%
+  summarise(correlation = cor(mean_score.x, mean_score.y, method = "pearson"))
+
+# 輸出相關性結果
+print(correlation_results)
+
+# 繪製點狀圖與回歸線
+plot <- ggplot(combined_data, aes(x = mean_score.x, y = mean_score.y, color = subscale)) +
+  geom_point(size = 3) +  # 繪製點
+  geom_smooth(method = "lm", se = FALSE, linetype = "solid", color = "black", size = 0.5) +  # 繪製回歸線
+  labs(title = "Scatter Plot of PANAS(post - pre) and ABCCT (Moodtag - Common)",
+       x = "PANAS (post - pre) Score",
+       y = "ABCCT (Moodtag - Common) Score",
+       color = "Subscale") +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 12)
+  ) +
+  facet_wrap(~ subscale)  # 根據 subscale 繪製獨立的圖形
+
+# 顯示圖表
+print(plot)
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

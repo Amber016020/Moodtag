@@ -1,0 +1,229 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+```{r}
+#install.packages("irr")       # 包含 kappam.fleiss 和 kappa2 等函數
+#install.packages("psych")     # 包含 cohen.kappa 函數
+#install.packages("lpSolve")
+```
+
+```{r}
+library(irr)
+library(readxl)
+library(psych)
+
+```
+
+```{r}
+# 模擬一個資料框
+data <- data.frame(
+  Rater1 = c("A", "B", "C", "A", "C"),
+  Rater2 = c("A", "B", "C", "B", "C")
+)
+
+print(data)
+
+# 計算 Cohen's Kappa
+cohen_kappa <- kappa2(data)  # data 必須為兩列
+print(cohen_kappa)
+```
+
+```{r}
+# 讀取google sheet表單中實驗人員們coding的資料
+Yachun_sheet <- "https://docs.google.com/spreadsheets/d/1F4qmUqk2pvRj5VHobsL1ae2Zq6v0ywZXy5M6NWmb00Y/export?format=csv&gid=0"
+code1 <- read.csv(Yachun_sheet)
+
+Amber_sheet <- "https://docs.google.com/spreadsheets/d/1F4qmUqk2pvRj5VHobsL1ae2Zq6v0ywZXy5M6NWmb00Y/export?format=csv&gid=1000546993"
+code2 <- read.csv(Amber_sheet)
+
+print(code1)
+print(code2)
+
+
+# 移除名為 "Counts" 和 "逐字稿" 的橫行資料
+rater1 <- code1[!rownames(code1) %in% c("1","2", "3"), ]
+rater2 <- code2[!rownames(code2) %in% c("1","2", "3"), ]
+
+rater1 <- rater1[, -1]
+rater2 <- rater2[, -1]
+
+# 移除空白行
+rater1 <- rater1[!apply(rater1, 1, function(row) all(row == "" | is.na(row))), ]
+rater2 <- rater2[!apply(rater2, 1, function(row) all(row == "" | is.na(row))), ]
+
+# 刪除名為 "codes" 的列
+rater1 <- rater1[, !colnames(rater1) %in% "Codes"]
+rater2 <- rater2[, !colnames(rater2) %in% "Codes"]
+
+# 提取代碼（列名）
+codes <- colnames(code1)
+codes <- codes[codes != "Codes"]
+
+print(codes)
+# 將數據轉置，將訪談樣本作為列，代碼作為行
+data1_t <- as.data.frame(t(rater1), stringsAsFactors = FALSE)
+data2_t <- as.data.frame(t(rater2), stringsAsFactors = FALSE)
+
+print(data1_t)
+print(data2_t)
+
+# 設定列名為訪談樣本的標籤
+colnames(data1_t) <- paste0("Sample", 1:ncol(data1_t))
+colnames(data2_t) <- paste0("Sample", 1:ncol(data2_t))
+
+# 確保代碼對應正確
+rownames(data1_t) <- codes
+rownames(data2_t) <- codes
+
+
+# 確保兩個 rater 的標註數量一致
+if (length(rater1) != length(rater2)) {
+  stop("評分者標註數量不一致，請檢查資料!")
+}
+```
+
+```{r}
+
+# 初始化存放 Kappa 結果的向量
+kappas <- numeric(ncol(rater1))  # 根據主題數量來初始化
+
+# 對每一個主題計算 Cohen's Kappa
+for (i in seq_len(ncol(rater1))) {
+  # 提取兩位實驗人員對該主題的標注
+  rater_matrix <- data.frame(
+    Rater1 = rater1[, i],
+    Rater2 = rater2[, i]
+  )
+  
+  # 計算 Cohen's Kappa
+  kappa_result <- kappa2(rater_matrix)
+  
+  # 儲存每個主題的 Kappa 值
+  kappas[i] <- kappa_result$value
+}
+
+# 顯示每個 code 的 Kappa 值
+for (i in seq_along(codes)) {
+  cat(paste(codes[i], "-> Kappa:", kappas[i]), "\n")
+}
+```
+
+```{r}
+# 讀取 CSV 檔案
+file1 <- "E:/Research/part/data/Amber_1.csv"
+file2 <- "E:/Research/part/data/Yachun_1.csv"
+
+data1 <- read.csv(file1, stringsAsFactors = FALSE, header = TRUE)
+data2 <- read.csv(file2, stringsAsFactors = FALSE, header = TRUE)
+
+# 移除 data1 中的空白行
+data1 <- data1[!apply(data1, 1, function(row) all(row == "" | is.na(row))), ]
+# 移除 data2 中的空白行
+data2 <- data2[!apply(data2, 1, function(row) all(row == "" | is.na(row))), ]
+
+# 確認資料格式
+print(head(data1))
+print(head(data2))
+
+# 確保兩個 rater 的標註數量一致
+if (length(rater1) != length(rater2)) {
+  stop("評分者標註數量不一致，請檢查資料!")
+}
+
+# 合併資料
+ratings <- data.frame(
+  Code = codes,
+  Rater1 = rater1,
+  Rater2 = rater2,
+  stringsAsFactors = FALSE
+)
+
+# 確認合併結果
+print(ratings)
+
+# 安裝必要的套件
+if (!require(psych)) install.packages("psych")
+
+# 計算每個 code 的 Cohen's Kappa
+library(psych)
+kappas <- apply(ratings[, -1], 1, function(row) {
+  kappa2(matrix(row, nrow = 2))$value
+})
+
+# 添加 Kappa 結果到表格
+ratings$Kappa <- kappas
+
+# 輸出結果
+print(ratings)
+
+```
+
+```{r}
+# 確保數據格式一致
+if (!all(colnames(data1) == colnames(data2))) {
+  stop("data1 和 data2 的代碼不一致！請檢查資料。")
+}
+
+# 提取代碼（列名）
+codes <- colnames(data1)
+
+# 將數據轉置，將訪談樣本作為列，代碼作為行
+data1_t <- as.data.frame(t(data1), stringsAsFactors = FALSE)
+data2_t <- as.data.frame(t(data2), stringsAsFactors = FALSE)
+
+# 設定列名為訪談樣本的標籤
+colnames(data1_t) <- paste0("Sample", 1:ncol(data1_t))
+colnames(data2_t) <- paste0("Sample", 1:ncol(data2_t))
+
+# 確保代碼對應正確
+rownames(data1_t) <- codes
+rownames(data2_t) <- codes
+
+# 合併 Rater1 和 Rater2 的數據
+ratings <- cbind(
+  Code = codes,
+  Rater1 = data1_t,
+  Rater2 = data2_t
+)
+
+print(ratings)
+
+# 計算每個代碼的 Cohen's Kappa
+kappas <- sapply(1:nrow(data1_t), function(i) {
+  # 提取 Rater1 和 Rater2 對應訪談樣本的標註值
+  rater_data <- data.frame(
+    Rater1 = as.numeric(data1_t[i, ]),
+    Rater2 = as.numeric(data2_t[i, ])
+  )
+  
+  print(rater_data)
+  # 計算 Kappa
+  kappa2(rater_data)$value
+})
+
+# 添加 Kappa 結果到表格
+results <- data.frame(
+  Code = codes,
+  Kappa = kappas,
+  stringsAsFactors = FALSE
+)
+
+# 輸出結果
+print(results)
+
+# 如果需要保存為 CSV
+#write.csv(results, "E:/Research/part/results/kappa_results.csv", row.names = FALSE)
+
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
