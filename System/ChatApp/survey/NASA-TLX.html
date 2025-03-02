@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA TLX 問卷</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        form {
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #666;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        input[type="submit"] {
+            display: block;
+            margin-top: 30px;
+        }
+        #submitBtn {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .slider-label {
+            width: 10%;
+            text-align: center;
+            font-size: 12px; /* 設定標籤的字體大小 */
+            color: #999; /* 設定標籤的顏色 */
+        }
+        .slider-labels {
+            display: flex; /* 讓標籤水平排列 */
+            justify-content: space-between; /* 讓標籤均勻分配到兩端 */
+            margin-top: 10px; /* 在標籤上方增加間距 */
+        }
+    </style>
+</head>
+<body>
+    <h1>NASA TLX 問卷</h1>
+    <form id="susForm" method="post">
+        <div class="slider-container">
+            <label for="mental-demand" style="font-size: 18px;">心理需求：
+                <span class="slider-value" id="mental-demand-value">10</span></label>
+            <label>本次的實驗中，需運用多少心智及知覺的活動（例如：思考、決定、記憶、觀察、搜索，等等）？</label>
+            <div class="slider-labels">
+                <span class="slider-label">非常低</span>
+                <span class="slider-label">非常高</span>
+            </div>
+            <input type="range" name="1" id="mental-demand" min="0" max="20" value="10" step="1">
+          </div>
+          
+          <div class="slider-container">
+            <label for="physical-demand" style="font-size: 18px;">身體需求：
+                <span class="slider-value" id="physical-demand-value">10</span></label>
+              <label>本次的實驗中，需運用多少體力負荷的活動（例如：轉動、控制、行動，等等）？</label>
+              <div class="slider-labels">
+                <span class="slider-label">非常低</span>
+                <span class="slider-label">非常高</span>
+            </div>
+            <input type="range" name="2" id="physical-demand" min="0" max="20" value="10" step="1">
+          </div>
+          
+          <div class="slider-container">
+            <label for="temporal-demand" style="font-size: 18px;">時間需求：
+                <span class="slider-value" id="temporal-demand-value">10</span></label>
+              <label>本次的實驗中，進行的步調讓您感覺到多少時間壓力？本實驗的步調是緩慢還是急速？</label>
+              <div class="slider-labels">
+                <span class="slider-label">非常低</span>
+                <span class="slider-label">非常高</span>
+            </div>
+            <input type="range" name="3" id="temporal-demand" min="0" max="20" value="10" step="1">
+          </div>
+          
+          <div class="slider-container">
+            <label for="performance" style="font-size: 18px;">自我績效：
+                <span class="slider-value" id="performance-value">10</span></label>
+              <label>本次的實驗中，您對自己答題的準確度是否滿意？</label>
+              <div class="slider-labels">
+                <span class="slider-label">非常低</span>
+                <span class="slider-label">非常高</span>
+            </div>
+            <input type="range" name="4" id="performance" min="0" max="20" value="10" step="1">
+          </div>
+          
+          <div class="slider-container">
+            <label for="effort" style="font-size: 18px;">精力耗費：
+                <span class="slider-value" id="effort-value">10</span></label>
+              <label>本次的實驗讓您感受到的難易程度為何？</label>
+              <div class="slider-labels">
+                <span class="slider-label">非常低</span>
+                <span class="slider-label">非常高</span>
+            </div>
+            <input type="range" name="5" id="effort" min="0" max="20" value="10" step="1">
+          </div>
+          
+          <div class="slider-container">
+            <label for="frustration" style="font-size: 18px;">挫折程度：
+                <span class="slider-value" id="frustration-value">10</span></label>
+              <label>本次的實驗中，您感到挫折、失敗、緊張、氣餒、無把握？</label>
+              <div class="slider-labels">
+                <span class="slider-label">非常低</span>
+                <span class="slider-label">非常高</span>
+            </div>
+            <input type="range" name="6" id="frustration" min="0" max="20" value="10" step="1">
+          </div>
+        
+        <input id="submitBtn" type="submit" value="提交">
+    </form>
+    <script>
+        // 更新滑块值
+        function updateSliderValue(slider, display) {
+            display.innerText = slider.value;
+        }
+
+        // 初始化滑块
+        function initSlider(sliderId, displayId) {
+            const slider = document.getElementById(sliderId);
+            const display = document.getElementById(displayId);
+
+            slider.addEventListener('input', () => updateSliderValue(slider, display));
+            // 设置初始值
+            updateSliderValue(slider, display);
+        }
+
+        initSlider('mental-demand', 'mental-demand-value');
+        initSlider('physical-demand', 'physical-demand-value');
+        initSlider('temporal-demand', 'temporal-demand-value');
+        initSlider('performance', 'performance-value');
+        initSlider('effort', 'effort-value');
+        initSlider('frustration', 'frustration-value');
+        
+        document.getElementById('susForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            
+            // 獲取當前頁面的 URL
+            var urlParams = new URLSearchParams(window.location.search);
+
+            // 獲取 user 和 mode 的值
+            var user = urlParams.get('user');
+            var mode = urlParams.get('mode');
+
+            // 輸出到控制台（僅供調試）
+            console.log('User:', user);
+            console.log('Mode:', mode);
+
+            var formData = new FormData(event.target);
+
+            var formValues = {};
+
+            var allOptionsSelected = false;
+            var index = 0;
+
+            // 計數器，用於跟蹤完成的請求數量
+            let completedRequests = 0;
+            // 需要發送的請求總數
+            let totalRequests = 6;
+
+            formData.forEach((value, key) => {
+                let xhr = new XMLHttpRequest();
+                xhr.open("POST", "php/insert-TAS.php", true);
+                xhr.onload = () => {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        if (xhr.status === 200) {
+                            let data = xhr.response;
+                            console.log(data);
+
+                            // 每完成一個請求，增加計數器
+                            completedRequests++;
+                            console.log(completedRequests);
+                            
+                            // 檢查是否所有的請求都已完成
+                            if (completedRequests === totalRequests) {
+                                console.log('所有請求已完成');
+                                // 在這裡關閉網頁
+                                window.close();
+                            }
+                        }
+                    }
+                }
+                console.log(formValues);
+                xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhr.send("user=" + user + 
+                        "&mode=" + mode + 
+                        "&question=" + key + 
+                        "&answer=" + value + 
+                        "&type=" + 'NASA');
+
+                formValues[key] = value;
+
+            });
+            //window.close(); // 關閉網頁
+            console.log('表單已提交');
+        });
+    </script>
+</body>
+</html>

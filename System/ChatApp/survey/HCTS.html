@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABCCT - 評估溝通技術對情感影響量表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .question {
+            margin-bottom: 50px;
+            text-align: center;
+            /* 將問題置中顯示 */
+        }
+
+        .options label {
+            margin-right: 15px;
+        }
+
+        #submitBtn {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #submitBtn:hover {
+            background-color: #45a049;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+</head>
+
+<body>
+    <h1>ABCCT - 評估溝通技術對情感影響量表</h1>
+    <form id="susForm">
+        <div class="question">
+
+        </div>
+        <!-- Add more questions similarly -->
+        <button type="submit" id="submitBtn">提交</button>
+    </form>
+
+    <script>
+        var count = 1;
+        $(document).ready(function(){
+            var questionTopic = ['使用 <M> 與<X>交流可以幫助我了解<X>當天的感受。',
+                                '使用 <M> 與<X>交流可以幫助我讓<X>了解我的感受。',
+                                '使用 <M> 與<X>交流，讓我感受到<X>對我的關心。',
+                                '我覺得使用 <M> 與我聯繫，會讓 <X> 感到參與感。',
+                                '我很期待使用 <M> 和 <X> 交流',
+                                '我使用 <M> 時，與<X>相處非常愉快。',
+                                '使用 <M> 與<X>交流讓我感覺與<X>更親近。',
+                                '當我們聊天結束後，我仍然不斷回想起<X>使用<M>分享的東西。',
+                                '使用 <M> 與<X>交流有助於我感覺與<X>的連結更加緊密。',
+                                '使用 <M> 與<X>交流，可以幫助我提供<X>提供社交支持。',
+                                '使用 <M> 與<X>交流，讓我感覺被重視。',
+                                '使用 <M> 與我交流可以幫助<X>在我需要的時候出現在我身邊。',
+                                '當我心情不好時，使用 <M> 與<X>交流可以幫助我感覺好一點。',
+                                '使用 <M> 與<X>交流可以幫助我減少對某些事情的擔憂。',
+                                '我擔心<X>覺得有義務使用 <M> 與我聯絡。',
+                                '即使我不願意，我也必須使用 <M> 與<X>交談。',
+                                '如果我不回覆<X>使用 <M> 進行的聯繫，我會感到內疚。',
+                                '當<X>嘗試使用 <M> 聯繫我時，即使我不想，我也必須回答。',
+                                '當我嘗試使用 <M> 聯繫<X>時，<X>不在身邊，我感到難過。',
+                                '當我嘗試使用 <M> 聯繫<X>時，<X>花了太長時間才回复，我感到很難過。',
+                                '我擔心我沒有達到<X>對使用 <M> 進行聯繫的期望。',
+                                '當我們使用 <M> 時，<X>沒有給我足夠的關注，我感到很難過。',
+                                '我擔心<X>可能會使用 <M> 了解到一些我想保密的資訊。',
+                                '當<X>和我一起使用 <M> 時，我擔心我的隱私。',
+                                '我擔心其他人可能會無意中聽到或看到<X>和我使用 <M> 共享的內容。',
+                                '我擔心在使用 <M> 進行聯繫期間侵犯了<X>的隱私。',
+                                ];
+            const replacementValues = ["Moodtag", "朋友"];
+            // TODO：moodtag or 一般常用的文字通訊軟體 - line
+            
+
+            questionTopic.forEach(element => {
+                var replacedQuestion = element.replace(/\<M\>/g, replacementValues[0]).replace(/\<X\>/g, replacementValues[1]);
+                var questionTopic_html = '<p>' + count + '. ' + replacedQuestion + '</p>'
+                                    + `<div class="options">
+                                            <label><input type="radio" name="` + count + `value="1"> 從來沒有</label>
+                                            <label><input type="radio" name="` + count + `value="2"> 很少</label>
+                                            <label><input type="radio" name="` + count + `value="3"> 有時</label>
+                                            <label><input type="radio" name="` + count + `value="4"> 經常</label>
+                                            <label><input type="radio" name="` + count + `value="5"> 幾乎總是</label>
+                                        </div>`;
+
+                $('.question').append(questionTopic_html);
+                count++;
+            });
+        })
+
+        document.getElementById('susForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            
+            // 獲取當前頁面的 URL
+            var urlParams = new URLSearchParams(window.location.search);
+
+            // 獲取 user 和 mode 的值
+            var user = urlParams.get('user');
+            var mode = urlParams.get('mode');
+            var testOrder = urlParams.get('testOrder');
+
+            var formData = new FormData(event.target);
+
+            var formValues = {};
+            
+            // 計數器，用於跟蹤完成的請求數量
+            let completedRequests = 0;
+            // 需要發送的請求總數
+            let totalRequests = count-1;
+
+            var allOptionsSelected = false;
+            var index = 0;
+
+            // 遍歷每個問題
+            formData.forEach((value, key) => {
+                formValues[key] = value;
+                index++;
+            });
+
+            if( index !== totalRequests ){
+                alert("請作答完成再提交！");
+                return;
+            } 
+            console.log(totalRequests);
+            formData.forEach((value, key) => {
+                let xhr = new XMLHttpRequest();
+                xhr.open("POST", "../php/insert-survey.php", true);
+                xhr.onload = () => {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        if (xhr.status === 200) {
+                            let data = xhr.response;
+                            console.log(data);
+                            // 每完成一個請求，增加計數器
+                            completedRequests++;
+                            console.log(completedRequests);
+                            
+                            // 檢查是否所有的請求都已完成
+                            if (completedRequests === totalRequests) {
+                                console.log('所有請求已完成');
+                                // 在這裡關閉網頁
+                                window.close();
+                            }
+                        }
+                    }
+                }
+                console.log(formValues);
+                xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhr.send("user=" + user + 
+                        "&scaleName=" + 'ABCCT' +
+                        "&testOrder=" + testOrder + 
+                        "&mode=" + mode + 
+                        "&question=" + key + 
+                        "&answer=" + value );
+
+                formValues[key] = value;
+
+            });
+            //window.close(); // 關閉網頁
+            console.log('表單已提交');
+        });
+    </script>
+</body>
+
+</html>

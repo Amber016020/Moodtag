@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPA - 人工智慧信任量表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .question {
+            margin-bottom: 50px;
+        }
+
+        .options label {
+            margin-right: 15px;
+        }
+
+        #submitBtn {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #submitBtn:hover {
+            background-color: #45a049;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+</head>
+
+<body>
+    <h1>TPA - 人工智慧信任量表</h1>
+    <p style="text-align: center"><strong>本量表旨在評估您對人工智慧系統 Moodtag 的信任感受，請根據您剛才的使用體驗，選擇您對每個敘述的認同程度。</strong></p>
+    <form id="susForm">
+        <div class="question-container" style="display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: left; min-height: 100vh;">
+            <div class="question" style="width: 80%; max-width: 800px;">
+            </div>
+        </div>
+        <!-- Add more questions similarly -->
+        <button type="submit" id="submitBtn">提交</button>
+    </form>
+
+    <script>
+        var count = 1;
+        $(document).ready(function(){
+            var questionTopic = ['Moodtag具有欺騙性',
+                                'Moodtag以卑鄙的方式行事',
+                                '我對Moodtag的意圖、行為或輸出持懷疑態度',
+                                '我對Moodtag的意圖持懷疑態度',
+                                'Moodtag的行為將產生有害或傷害性的結果',
+                                '我對Moodtag充滿信心',
+                                'Moodtag提供安全保障',
+                                'Moodtag具有完整性',
+                                'Moodtag是可靠的',
+                                'Moodtag是可以信賴的',
+                                '我可以信任Moodtag',
+                                '我熟悉Moodtag',
+                                ];
+
+            questionTopic.forEach(element => {
+                var questionTopic_html = '<p>' + count + '. ' + element + '</p>'
+                                    + `<div class="options" style="display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 30px;">
+                                            <label><input type="radio" name="` + count + `"value="1"> 非常不同意</label>
+                                            <label><input type="radio" name="` + count + `"value="2"> 不同意</label>
+                                            <label><input type="radio" name="` + count + `"value="3"> 有點不同意</label>
+                                            <label><input type="radio" name="` + count + `"value="4"> 普通</label>
+                                            <label><input type="radio" name="` + count + `"value="5"> 有點同意</label>
+                                            <label><input type="radio" name="` + count + `"value="6"> 同意</label>
+                                            <label><input type="radio" name="` + count + `"value="7"> 非常同意</label>
+                                        </div>`;
+
+                $('.question').append(questionTopic_html);
+                count++;
+            });
+        })
+
+        document.getElementById('susForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            
+            // 獲取當前頁面的 URL
+            var urlParams = new URLSearchParams(window.location.search);
+
+            // 獲取 user 和 mode 的值
+            var user = urlParams.get('user');
+            var mode = urlParams.get('mode');
+            var testOrder = urlParams.get('testOrder');
+
+            var formData = new FormData(event.target);
+
+            var formValues = {};
+            
+            // 計數器，用於跟蹤完成的請求數量
+            let completedRequests = 0;
+            // 需要發送的請求總數
+            let totalRequests = count-1;
+
+            var allOptionsSelected = false;
+            var index = 0;
+
+            // 遍歷每個問題
+            formData.forEach((value, key) => {
+                formValues[key] = value;
+                index++;
+            });
+
+            if( index !== totalRequests ){
+                alert("請作答完成再提交！");
+                return;
+            } 
+            console.log(totalRequests);
+            formData.forEach((value, key) => {
+                let xhr = new XMLHttpRequest();
+                xhr.open("POST", "../php/insert-survey.php", true);
+                xhr.onload = () => {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        if (xhr.status === 200) {
+                            let data = xhr.response;
+                            console.log(data);
+                            // 每完成一個請求，增加計數器
+                            completedRequests++;
+                            console.log(completedRequests);
+                            
+                            // 檢查是否所有的請求都已完成
+                            if (completedRequests === totalRequests) {
+                                console.log('所有請求已完成');
+                                // 在這裡關閉網頁
+                                window.close();
+                            }
+                        }
+                    }
+                }
+                console.log(formValues);
+                xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhr.send("user=" + user + 
+                        "&scaleName=" + 'TPA' +
+                        "&testOrder=" + testOrder + 
+                        "&mode=" + "Moodtag" + 
+                        "&question=" + key + 
+                        "&answer=" + value );
+
+                formValues[key] = value;
+
+            });
+            //window.close(); // 關閉網頁
+            console.log('表單已提交');
+        });
+    </script>
+</body>
+
+</html>

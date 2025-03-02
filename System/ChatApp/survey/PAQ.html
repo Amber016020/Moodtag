@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAQ 述情障礙量表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .question {
+            margin-bottom: 50px;
+        }
+
+        .options label {
+            margin-right: 15px;
+        }
+
+        #submitBtn {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #submitBtn:hover {
+            background-color: #45a049;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <h1>PAQ 述情障礙量表</h1>
+    <p style="text-align: center"><strong>請根據您目前的感受，或剛才聊天時的體驗，回答以下問題</strong></p>
+    <form id="susForm">
+        <div class="question-container" style="display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: left; min-height: 100vh;">
+            <div class="question" style="width: 80%; max-width: 800px;">
+            </div>
+        </div>
+        <!-- Add more questions similarly -->
+        <button type="submit" id="submitBtn">提交</button>
+    </form>
+
+    <script>
+        var count = 1;
+         $(document).ready(function(){
+            var questionTopic = ['當我感覺很糟糕時（體驗到不愉快的情緒時），我不能用恰當的言語去描述它們。',
+                                '當我感覺很糟糕時，我無法分辨自己是悲傷、憤怒還是害怕。',
+                                '我傾向於忽略自己的感受。',
+                                '當我感覺好的時候（體驗到愉快的情緒時），我不能用恰當的言語去描述它們。',
+                                '當我感覺好的時候，我無法分辨自己是快樂、興奮還是興味盎然。',
+                                '我更傾向於將自己的感受拋之腦後，而不是注意它們。',
+                                '當我感覺很糟糕時，我無法深入或具體地談論這些感受。',
+                                '當我感覺很糟糕時，我無法理解這些感受。',
+                                '我不關注自己的情緒。',
+                                '當我感覺好的時候，我無法深入或具體地談論這些感受。',
+                                '當我感覺好的時候，我無法理解這些感受。',
+                                '通常我會盡量避免思考自己的感受。',
+                                '當一些糟糕的事情發生時，我很難用言語來表達我的感受。',
+                                '當我感覺很糟糕時，我對這種情緒是什麼感到困惑。',
+                                '我更傾向於專注於看得見或摸得著的東西，而不是我的情緒。',
+                                '當一些好事發生時，我很難用言語來表達我的感受。',
+                                '當我感覺好的時候，我對這種情緒是什麼感到困惑。',
+                                '我努力不去「碰觸」自己的情緒。',
+                                '當我感覺很糟糕時，如果我試著去描述自己的感受，我不知道該說些什麼。',
+                                '當我感覺很糟糕時，我因這些感受感到困惑。',
+                                '對我來說，知道自己的感受並不重要。',
+                                '當我感覺好的時候，如果我試著去描述自己的感受，我不知道該說些什麼。',
+                                '當我感覺好的時候，我因這些感受感到困惑。',
+                                '對我而言，思考自己的情緒是很奇怪的。',
+                                ];
+
+            questionTopic.forEach(element => {
+                var questionTopic_html = '<p>' + count + '. ' + element + '</p>'
+                                    + `<div class="options" style="display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 30px;">
+                                            <label><input type="radio" name="` + count + `"value="1"> 非常不同意</label>
+                                            <label><input type="radio" name="` + count + `"value="2"> 不同意</label>
+                                            <label><input type="radio" name="` + count + `"value="3"> 有點不同意</label>
+                                            <label><input type="radio" name="` + count + `"value="4"> 普通</label>
+                                            <label><input type="radio" name="` + count + `"value="5"> 有點同意</label>
+                                            <label><input type="radio" name="` + count + `"value="6"> 同意</label>
+                                            <label><input type="radio" name="` + count + `"value="7"> 非常同意</label>
+                                        </div>`;
+
+                $('.question').append(questionTopic_html);
+                count++;
+            });
+        })
+
+        document.getElementById('susForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            
+            // 獲取當前頁面的 URL
+            var urlParams = new URLSearchParams(window.location.search);
+
+            // 獲取 user 和 mode 的值
+            var user = urlParams.get('user');
+            var mode = urlParams.get('mode');
+            var testOrder = urlParams.get('testOrder');
+
+            var formData = new FormData(event.target);
+
+            var formValues = {};
+            
+            // 計數器，用於跟蹤完成的請求數量
+            let completedRequests = 0;
+            // 需要發送的請求總數
+            let totalRequests = count-1;
+
+            var allOptionsSelected = false;
+            var index = 0;
+
+            // 遍歷每個問題
+            formData.forEach((value, key) => {
+                formValues[key] = value;
+                index++;
+            });
+
+            if( index !== totalRequests ){
+                alert("請作答完成再提交！");
+                return;
+            } 
+            console.log(totalRequests);
+            formData.forEach((value, key) => {
+                let xhr = new XMLHttpRequest();
+                xhr.open("POST", "../php/insert-survey.php", true);
+                xhr.onload = () => {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        if (xhr.status === 200) {
+                            let data = xhr.response;
+                            console.log(data);
+                            // 每完成一個請求，增加計數器
+                            completedRequests++;
+                            console.log(completedRequests);
+                            
+                            // 檢查是否所有的請求都已完成
+                            if (completedRequests === totalRequests) {
+                                console.log('所有請求已完成');
+                                // 在這裡關閉網頁
+                                window.close();
+                            }
+                        }
+                    }
+                }
+                console.log(formValues);
+                xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhr.send("user=" + user + 
+                        "&scaleName=" + 'PAQ' +
+                        "&testOrder=" + testOrder + 
+                        "&mode=" + mode + 
+                        "&question=" + key + 
+                        "&answer=" + value );
+
+                formValues[key] = value;
+
+            });
+            //window.close(); // 關閉網頁
+            console.log('表單已提交');
+        });
+    </script>
+</body>
+
+</html>

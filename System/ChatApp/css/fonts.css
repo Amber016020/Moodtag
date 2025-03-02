@@ -1,0 +1,31 @@
+@font-face {
+    font-family: 'ChenYuluoyan-Thin';
+    src: url('ChenYuluoyan-Thin.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'ChenYuluoyan-Thin-Monospaced';
+    src: url('ChenYuluoyan-Thin-Monospaced.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'JasonHandwriting1';
+    src: url('JasonHandwriting1.ttf') format('truetype');
+}
+
+
+@font-face {
+    font-family: 'JasonHandwriting2';
+    src: url('JasonHandwriting2.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'JasonHandwriting3';
+    src: url('JasonHandwriting3.ttf') format('truetype');
+}
+
+
+@font-face {
+    font-family: 'JasonHandwriting4';
+    src: url('JasonHandwriting4.ttf') format('truetype');
+}

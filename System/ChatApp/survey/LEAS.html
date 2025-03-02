@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEAS - 情感意識水平量表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .question {
+            text-align: center;
+            list-style-position: inside; /* 讓編號也置中顯示 */
+        }
+
+        .options label {
+            margin-right: 15px;
+        }
+
+        #submitBtn {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #submitBtn:hover {
+            background-color: #45a049;
+        }
+
+        textarea {
+            margin-right: 20px;
+            /* 調整右邊的 margin 以增加空間 */
+            width: 300px;
+            /* 設置寬度為 300 像素 */
+            height: 50px;
+            /* 設置寬度為 300 像素 */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>LEAS - 情感意識水平量表</h1>
+    <form action="submit.php" method="post">
+        <div class="question">
+            <ol>
+                <li>
+                    <label for="q1">你在街上的時候，看到一個陌生人突然倒地不起。你會感到什麼？這個人會感到什麼？</label><br>
+                    <textarea id="q1_1" name="q1_1"></textarea>
+                    <textarea id="q1_2" name="q1_2"></textarea>
+                </li>
+                <li>
+                    <label for="q2">你在考試中沒有考好。你會感到什麼？你的父母會感到什麼？</label><br>
+                    <textarea id="q2_1" name="q2_1"></textarea>
+                    <textarea id="q2_2" name="q2_2"></textarea>
+                </li>
+                <li>
+                    <label for="q3">你在和朋友爭吵。你會感到什麼？你的朋友會感到什麼？</label><br>
+                    <textarea id="q3_1" name="q3_1"></textarea>
+                    <textarea id="q3_2" name="q3_2"></textarea>
+                </li>
+                <li>
+                    <label for="q4">你收到了一份意想不到的禮物。你會感到什麼？送禮物的人會感到什麼？</label><br>
+                    <textarea id="q4_1" name="q4_1"></textarea>
+                    <textarea id="q4_2" name="q4_2"></textarea>
+                </li>
+                <li>
+                    <label for="q5">你在面試中被拒絕了。你會感到什麼？面試官會感到什麼？</label><br>
+                    <textarea id="q5_1" name="q5_1"></textarea>
+                    <textarea id="q5_2" name="q5_2"></textarea>
+                </li>
+                <li>
+                    <label for="q6">你在公共場合被人指責。你會感到什麼？指責你的人會感到什麼？</label><br>
+                    <textarea id="q6_1" name="q6_1"></textarea>
+                    <textarea id="q6_2" name="q6_2"></textarea>
+                </li>
+                <li>
+                    <label for="q7">你在比賽中贏得了勝利。你會感到什麼？輸掉比賽的人會感到什麼？</label><br>
+                    <textarea id="q7_1" name="q7_1"></textarea>
+                    <textarea id="q7_2" name="q7_2"></textarea>
+                </li>
+                <li>
+                    <label for="q8">你在餐廳裡遇到了一個非常吸引人的異性。你會感到什麼？這個人會感到什麼？</label><br>
+                    <textarea id="q8_1" name="q8_1"></textarea>
+                    <textarea id="q8_2" name="q8_2"></textarea>
+                </li>
+                <li>
+                    <label for="q9">你在工作中犯了一個大錯誤。你會感到什麼？你的老闆會感到什麼？</label><br>
+                    <textarea id="q9_1" name="q9_1"></textarea>
+                    <textarea id="q9_2" name="q9_2"></textarea>
+                </li>
+                <li>
+                    <label for="q10">你在街上看到一個乞丐。你會感到什麼？這個乞丐會感到什麼？</label><br>
+                    <textarea id="q10_1" name="q10_1"></textarea>
+                    <textarea id="q10_2" name="q10_2"></textarea>
+                </li>
+                <li>
+                    <label for="q11">你在看一部悲傷的電影。你會感到什麼？電影中的角色會感到什麼？</label><br>
+                    <textarea id="q11_1" name="q11_1"></textarea>
+                    <textarea id="q11_2" name="q11_2"></textarea>
+                </li>
+                <li>
+                    <label for="q12">你在聽一首激動人心的歌曲。你會感到什麼？演唱這首歌的人會感到什麼？</label><br>
+                    <textarea id="q12_1" name="q12_1"></textarea>
+                    <textarea id="q12_2" name="q12_2"></textarea>
+                </li>
+                <li>
+                    <label for="q13">你在看一部喜劇電影。你會感到什麼？電影中的角色會感到什麼？</label><br>
+                    <textarea id="q13_1" name="q13_1"></textarea>
+                    <textarea id="q13_2" name="q13_2"></textarea>
+                </li>
+                <li>
+                    <label for="q14">你在讀一本有趣的書。你會感到什麼？書的作者會感到什麼？</label><br>
+                    <textarea id="q14_1" name="q14_1"></textarea>
+                    <textarea id="q14_2" name="q14_2"></textarea>
+                </li>
+                <li>
+                    <label for="q15">你在度假時遇到了美麗的風景。你會感到什麼？創造這個風景的人會感到什麼？</label><br>
+                    <textarea id="q15_1" name="q15_1"></textarea>
+                    <textarea id="q15_2" name="q15_2"></textarea>
+                </li>
+                <li>
+                    <label for="q16">你在和朋友一起玩得開心。你會感到什麼？你的朋友們會感到什麼？</label><br>
+                    <textarea id="q16_1" name="q16_1"></textarea>
+                    <textarea id="q16_2" name="q16_2"></textarea>
+                </li>
+                <li>
+                    <label for="q17">你在和家人共度時光。你會感到什麼？你的家人會感到什麼？</label><br>
+                    <textarea id="q17_1" name="q17_1"></textarea>
+                    <textarea id="q17_2" name="q17_2"></textarea>
+                </li>
+                <li>
+                    <label for="q18">你在幫助別人。你會感到什麼？被幫助的人會感到什麼？</label><br>
+                    <textarea id="q18_1" name="q18_1"></textarea>
+                    <textarea id="q18_2" name="q18_2"></textarea>
+                </li>
+                <li>
+                    <label for="q19">你取得了成功。你會感到什麼？幫助你成功的人會感到什麼？</label><br>
+                    <textarea id="q19_1" name="q19_1"></textarea>
+                    <textarea id="q19_2" name="q19_2"></textarea>
+                </li>
+                <li>
+                    <label for="q20">你經歷了失敗。你會感到什麼？幫助你失敗的人會感到什麼？</label><br>
+                    <textarea id="q20_1" name="q20_1"></textarea>
+                    <textarea id="q20_2" name="q20_2"></textarea>
+                </li>
+            </ol>
+        </div>
+        <button type="submit" id="submitBtn">提交</button>
+    </form>
+    <script>
+        document.getElementById('susForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            // You can handle form submission here
+            // For example, you can collect user responses and send them to the server for processing
+            console.log('表單已提交');
+        });
+    </script>
+</body>
+
+</html>

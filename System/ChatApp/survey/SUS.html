@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUS - 系統可用性量表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .question {
+            margin-bottom: 25px;
+            text-align: center; /* 將問題置中顯示 */
+        }
+        .options label {
+            margin-right: 15px;
+        }
+        #submitBtn {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #submitBtn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>SUS - 系統可用性量表</h1>
+    <form id="susForm">
+        <div class="question">
+            <p>1. 我想我會經常使用這個產品</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <div class="question">
+            <p>2. 我覺得這個產品過於複雜</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <div class="question">
+            <p>3. 我認為這個產品是簡單好用的</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <div class="question">
+            <p>4. 我想我需要有人協助才能使用這個產品</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <div class="question">
+            <p>5. 我覺得這個產品的功能整合的很好</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <div class="question">
+            <p>6. 我覺得這個產品有很多不一致的地方</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <div class="question">
+            <p>7. 我認為其他人能快速學習使用這產品</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <div class="question">
+            <p>8. 我覺得使用這個產品很麻煩</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <div class="question">
+            <p>9. 我很有自信地使用這個產品</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <div class="question">
+            <p>10. 我需要學會很多資訊才能使用這個產品</p>
+            <div class="options">
+                <label><input type="radio" name="question1" value="1"> 非常不同意</label>
+                <label><input type="radio" name="question1" value="2"> 不同意</label>
+                <label><input type="radio" name="question1" value="3"> 中立</label>
+                <label><input type="radio" name="question1" value="4"> 同意</label>
+                <label><input type="radio" name="question1" value="5"> 非常同意</label>
+            </div>
+        </div>
+        <!-- Add more questions similarly -->
+        <button type="submit" id="submitBtn">提交</button>
+    </form>
+
+    <script>
+        document.getElementById('susForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            // You can handle form submission here
+            // For example, you can collect user responses and send them to the server for processing
+            console.log('表單已提交');
+        });
+    </script>
+</body>
+</html>

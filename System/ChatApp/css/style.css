@@ -1,0 +1,884 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+}
+body{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #d0d0d0;
+  padding: 0 10px;
+}
+.wrapper{
+  background: #fff;
+  max-width: 450px;
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 0 128px 0 rgba(0,0,0,0.1),
+              0 32px 64px -48px rgba(0,0,0,0.8);
+}
+
+.highlightRed {
+  color: red; /* 或者其他你想要的顏色 */
+}
+
+.highlighOrange {
+  font-weight: bold;
+  color: rgb(207, 107, 0); /* 或者其他你想要的顏色 */
+}
+
+.highlightPurple {
+  color: rgb(115, 0, 255); /* 或者其他你想要的顏色 */
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* 半透明黑色背景 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  position: relative; /* 讓下面的背景色可以覆蓋到方框 */
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.modal::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* 背景色 */
+  border-radius: 8px;
+  z-index: -1; /* 確保背景色位於方框底下 */
+}
+
+.modal-footer {
+  text-align: center;
+  margin-top: 25px; 
+}
+
+.highlight-border {
+  outline: 4px solid red !important;
+}
+.affectDetailOutline{
+  outline: 4px solid #00bb8c;
+}
+.button-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* 按鈕之間的距離 */
+}
+
+.experiment-control-button {
+  padding: 10px 20px;
+  background-color: #c55aaa;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.experiment-control-button {
+  background-color: #c55aaa;
+}
+
+.mode-select-wrapper {
+  position: relative;
+  width: 350px; /* 設置下拉選單的寬度 */
+  margin: 20px auto; /* 將下拉選單置中 */
+  display: flex; /* 使用 Flexbox 來控制內容排列 */
+  align-items: center; /* 垂直居中對齊 */
+  white-space: nowrap; /* 不斷行 */
+}
+
+.mode-select-wrapper label {
+  margin-right: 10px; /* 加入一些右側間距 */
+}
+
+/* 自定義下拉選單外觀 */
+.mode-select-wrapper select {
+  appearance: none; /* 清除默認外觀 */
+  padding: 10px 20px; /* 設置填充 */
+  font-size: 16px; /* 設置字體大小 */
+  border: 2px solid #ccc; /* 設置邊框 */
+  border-radius: 5px; /* 設置邊框圓角 */
+  background-color: #f9f9f9; /* 設置背景顏色 */
+  width: 100%; /* 使下拉選單填滿父元素的寬度 */
+  cursor: pointer; /* 添加指針樣式 */
+}
+
+/* 下拉選單的箭頭圖標 */
+.mode-select-wrapper select::after {
+  content: '\25BC'; /* 使用 Unicode 符號表示箭頭 */
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+}
+
+/* 懸停時改變下拉選單的外觀 */
+.mode-select-wrapper select:hover {
+  border-color: #aaa; /* 鼠標懸停時更改邊框顏色 */
+}
+
+/* 當下拉選單被點擊時改變外觀 */
+.mode-select-wrapper select:focus {
+  outline: none; /* 移除點擊時的默認輪廓 */
+  border-color: #555; /* 更改邊框顏色 */
+}
+
+.mode-intro-text-M {
+  background: #6745d1;
+  border-radius: 18px 18px 0 18px;
+  color: #fff;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 10px;
+}
+
+.mode-intro-img-M {
+  background-color: #521df4;
+  color: white;
+  padding: 10px;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px;
+}
+
+.mode-intro-text-P {
+  background: #3bc389;
+  border-radius: 18px 18px 0 18px;
+  color: #fff;
+  margin-top: 10px;
+  margin-bottom: 2px;
+  padding: 10px;
+  font: #fff; /* 这里是否应该修改为 font-family 或 font-size？*/
+}
+
+.mode-intro-img-P {
+  color: white; /* 不太确定这个样式的含义，是否需要保留？*/
+  padding: 10px;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+/* CSS styles for the slider */
+
+#confirmButton {
+  background-color: #4CAF50; /* 設置背景顏色 */
+  border: none; /* 移除邊框 */
+  color: white; /* 設置文本顏色 */
+  padding: 10px 20px; /* 設置內邊距 */
+  text-align: center; /* 文本置中 */
+  text-decoration: none; /* 移除文本下劃線 */
+  display: inline-block; /* 將按鈕顯示為行內塊元素 */
+  font-size: 16px; /* 設置字體大小 */
+  margin: 4px 2px; /* 設置外邊距 */
+  cursor: pointer; /* 添加指示光標效果 */
+  border-radius: 8px; /* 設置圓角 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 添加陰影效果 */
+}
+
+#confirmButton:hover {
+  background-color: #45a049; /* 鼠標懸停時改變背景顏色 */
+}
+
+#confirmButton:active {
+  background-color: #3e8e41; /* 按下按鈕時改變背景顏色 */
+}
+
+.slider-container {
+  width: 300px;
+  margin: 25px auto;
+  margin-top: 0px;
+}
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 15px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+.slider:hover {
+  opacity: 1;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
+}
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+#fullscreen-container {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+}
+
+#close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: white;
+  cursor: pointer;
+}
+
+#fullscreen-img {
+  display: block;
+  margin: 0 auto;
+  max-width: 90%;
+  max-height: 90%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Login & Signup Form CSS Start */
+.form{
+  padding: 25px 30px;
+}
+.form header{
+  font-size: 25px;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e6e6e6;
+}
+.form form{
+  margin: 20px 0;
+}
+.form form .error-text{
+  color: #721c24;
+  padding: 8px 10px;
+  text-align: center;
+  border-radius: 5px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  margin-bottom: 10px;
+  display: none;
+}
+.form form .name-details{
+  display: flex;
+}
+.form .name-details .field:first-child{
+  margin-right: 10px;
+}
+.form .name-details .field:last-child{
+  margin-left: 10px;
+}
+.form form .field{
+  display: flex;
+  margin-bottom: 10px;
+  flex-direction: column;
+  position: relative;
+}
+.form form .field label{
+  margin-bottom: 2px;
+}
+.form form .input input{
+  height: 40px;
+  width: 100%;
+  font-size: 16px;
+  padding: 0 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+.form form .field input{
+  outline: none;
+}
+.form form .image input{
+  font-size: 17px;
+}
+.form form .button input{
+  height: 45px;
+  border: none;
+  color: #fff;
+  font-size: 17px;
+  background: #333;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 13px;
+}
+.form form .field i{
+  position: absolute;
+  right: 15px;
+  top: 70%;
+  color: #ccc;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.form form .field i.active::before{
+  color: #333;
+  content: "\f070";
+}
+.form .link{
+  text-align: center;
+  margin: 10px 0;
+  font-size: 17px;
+}
+.form .link a{
+  color: #333;
+}
+.form .link a:hover{
+  text-decoration: underline;
+} 
+.form .lang{
+  text-align: center;
+  margin: 10px 0;
+  font-size: 17px;
+}
+
+/* Users List CSS Start */
+.users{
+  padding: 25px 30px;
+}
+.users header,
+.users-list a{
+  display: flex;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e6e6e6;
+  justify-content: space-between;
+}
+
+.wrapper .round {
+  object-fit: cover;
+  border-radius: 50%;
+}
+.users header img{
+  height: 50px;
+  width: 50px;
+}
+:is(.users, .users-list) .content{
+  display: flex;
+  align-items: center;
+}
+:is(.users, .users-list) .content .details{
+  color: #000;
+  margin-left: 20px;
+}
+:is(.users, .users-list) .details span{
+  font-size: 18px;
+  font-weight: 500;
+}
+.users header .logout{
+  display: block;
+  background: #333;
+  color: #fff;
+  outline: none;
+  border: none;
+  padding: 7px 15px;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 17px;
+}
+.users .search{
+  margin: 20px 0;
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: space-between;
+}
+.users .search .text{
+  font-size: 18px;
+}
+.users .search input{
+  position: absolute;
+  height: 42px;
+  width: calc(100% - 50px);
+  font-size: 16px;
+  padding: 0 13px;
+  border: 1px solid #e6e6e6;
+  outline: none;
+  border-radius: 5px 0 0 5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+.users .search input.show{
+  opacity: 1;
+  pointer-events: auto;
+}
+.users .search button{
+  position: relative;
+  z-index: 1;
+  width: 47px;
+  height: 42px;
+  font-size: 17px;
+  cursor: pointer;
+  border: none;
+  background: #fff;
+  color: #333;
+  outline: none;
+  border-radius: 0 5px 5px 0;
+  transition: all 0.2s ease;
+}
+.users .search button.active{
+  background: #333;
+  color: #fff;
+}
+.search button.active i::before{
+  content: '\f00d';
+}
+.users-list{
+  max-height: 350px;
+  overflow-y: auto;
+}
+:is(.users-list, .chat-box)::-webkit-scrollbar{
+  width: 0px;
+}
+.users-list a{
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  padding-right: 15px;
+  border-bottom-color: #f1f1f1;
+}
+.users-list a:last-child{
+  margin-bottom: 0px;
+  border-bottom: none;
+}
+.users-list a img{
+  height: 40px;
+  width: 40px;
+}
+.users-list a .details p{
+  color: #67676a;
+}
+.users-list a .status-dot{
+  font-size: 12px;
+  color: #468669;
+  padding-left: 10px;
+}
+.users-list a .status-dot.offline{
+  color: #ccc;
+}
+
+/* Chat Area CSS Start */
+.chat-area header{
+  display: flex;
+  align-items: center;
+  padding: 18px 30px;
+}
+.chat-area header .back-icon{
+  color: #333;
+  font-size: 18px;
+}
+.chat-area header img{
+  height: 45px;
+  width: 45px;
+  margin: 0 15px;
+}
+.chat-area header .details span{
+  font-size: 15px;
+  font-weight: 500;
+}
+.chat-box{
+  position: relative;
+  min-height: 500px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 10px 30px 20px 30px;
+  background: #f7f7f7;
+  box-shadow: inset 0 32px 32px -32px rgb(0 0 0 / 5%),
+              inset 0 -32px 32px -32px rgb(0 0 0 / 5%);
+}
+.chat-box .text{
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: calc(100% - 50px);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+.chat-box .chat{
+  /* margin: 15px 0; */
+}
+.chat-box .chat p{
+  word-wrap: break-word;
+  padding: 8px 16px;
+  box-shadow: 0 0 32px rgb(0 0 0 / 8%),
+              0rem 16px 16px -16px rgb(0 0 0 / 10%);
+}
+
+.chat-box .outgoing .details{
+  margin-left: auto;
+}
+.outgoing .details p{
+  background: #333;
+  color: #fff;
+  border-radius: 18px 18px 0 18px;
+}
+.chat-box .incoming{
+  align-items: flex-end;
+}
+
+.smile {
+  width: 20px;
+  height: auto;
+  display:none;
+}
+
+
+.chat-box .incoming .profile{
+  height: 35px;
+  width: 35px;
+}
+.chat-box .incoming .details{
+  margin-right: auto;
+  margin-left: 10px;
+}
+.incoming .details p{
+  background: #fff;
+  color: #333;
+  border-radius: 18px 18px 18px 0;
+}
+.typing-area{
+  padding: 18px 30px;
+  display: flex;
+  justify-content: space-between;
+}
+.typing-area input{
+  height: 45px;
+  width: calc(100% - 58px);
+  font-size: 16px;
+  padding: 0 13px;
+  border: 1px solid #e6e6e6;
+  outline: none;
+  border-radius: 5px 0 0 5px;
+}
+.typing-area button{
+  color: #fff;
+  width: 55px;
+  border: none;
+  outline: none;
+  background: #333;
+  font-size: 19px;
+  cursor: pointer;
+  opacity: 0.7;
+  pointer-events: none;
+  border-radius: 0 5px 5px 0;
+  transition: all 0.3s ease;
+}
+.typing-area button.active{
+  opacity: 1;
+  pointer-events: auto;
+}
+.chat {
+  display: grid;
+  margin-bottom: 10px;
+}
+
+.details {
+  display: flex;
+  align-items: flex-end;
+}
+
+.details span,
+.details p {
+  margin-top: 10; 
+  margin-bottom: 0; 
+  margin-left: 10px;
+  margin-right: 10px; 
+}
+
+.faceEmo {
+  display: flex;
+  align-items: flex-end;
+  margin: 20px;
+}
+
+.faceEmo span,
+.faceEmo p {
+  font-size: 2em;
+}
+
+.time {
+  font-size: 0.8em;
+  white-space: nowrap;
+  margin-right: 10px;
+}
+
+.outgoing .details .time {
+  text-align: right;
+  margin-left: 10px;
+}
+
+.incoming .details .time {
+  text-align: left;
+  margin-left: 10px;
+}
+
+.message {
+  background-color: #f0f0f0;
+  padding: 5px 10px;
+  border-radius: 10px;
+  margin-left: 10px;
+  max-width: 70%;
+}
+
+
+.outgoing .affect {
+  text-align: right;
+}
+
+.incoming .affect {
+  text-align: left;
+  margin-left: 50px;
+}
+
+.emojioneemoji {
+  width: 15px;
+  height: 15px;
+}
+
+.emotion-record {
+  text-align: center; /* 將所有內容置中 */
+}
+
+.emotion-record h2 {
+  font-size: 24px; /* 調整標題字體大小 */
+}
+
+.slider-container::before {
+  font-size: 40px; /* 調整 emoji 大小 */
+  left: -50px; /* 调整表情符号的位置 */
+  top: -15px;
+  position: absolute;
+}
+
+.slider-container::after {
+  font-size: 40px; /* 調整 emoji 大小 */
+  right: -50px; /* 调整表情符号的位置 */
+  top: -15px;
+  position: absolute;
+}
+
+.slider-container {
+  position: relative;
+}
+
+#confirmButton {
+  font-size: 18px; /* 調整按鈕字體大小 */
+  margin-bottom: 20px; /* 調整按鈕上方間距 */
+}
+
+/* 平靜 */
+#sliderContainer1::before {
+  content: '😐';
+}
+/* 激動 */
+#sliderContainer1::after {
+  content: '😮';
+}
+
+/* 傷心 */
+#sliderContainer2::before {
+  content: '😄';
+}
+
+/* 開心 */
+#sliderContainer2::after {
+  content: '🙁';
+}
+
+.AScontainer {
+  margin:2em 0 6em 0;
+  background-repeat: no-repeat, no-repeat;
+  background-position: left, right;
+  background-size:contain;  
+  padding: 0 75px 0 75px;
+}
+
+.arousal {
+  background-image: url(picture/affectiveSlider/AS_sleepy.png), url(picture/affectiveSlider/AS_wideawake.png);
+  background-size:contain;
+}
+
+.pleasure {
+  background-image: url(picture/affectiveSlider/AS_unhappy.png), url(picture/affectiveSlider/AS_happy.png);
+  background-size:contain;
+}
+
+.AffectiveSlider input {
+  /* Hide the number input */
+  display: none;
+}
+.AffectiveSlider .ui-slider-track {
+  margin-left: 15px;
+  background-color:#FFF;
+  border-color:#000;
+}
+
+.AffectiveSlider .ui-slider-handle {
+  background-color:#FFF;
+  border-color:#000;
+}
+
+.ASintensityCue {
+  margin: 0 15px 0 15px;
+  height:48px;
+  background-image: url("picture/affectiveSlider/AS_intensity_cue.png");
+  background-repeat: no-repeat;
+  background-size:100%;
+  background-position: center;
+  
+}
+
+.read-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.read {
+  font-size: 12px;
+  color: gray;
+}
+
+.time {
+  font-size: 10px;
+  color: gray;
+  margin-top: 2px;
+}
+
+/* 設置<a>元素為行內塊，這樣它可以包含按鈕 */
+#nextModeLink {
+  display: ruby-text;
+}
+
+/* 設置按鈕樣式 */
+#stratButton {
+  font-size: 30px; /* 放大字體 */
+  padding: 20px 30px; /* 增加內邊距 */
+  cursor: pointer; /* 添加指針樣式 */
+  display: block;
+  margin: 0 auto;
+  background-color: #60b1d3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+#stratButton:hover {
+  background-color: #467b91;
+}
+
+/* Responive media query */
+@media screen and (max-width: 450px) {
+  .form, .users{
+    padding: 20px;
+  }
+  .form header{
+    text-align: center;
+  }
+  .form form .name-details{
+    flex-direction: column;
+  }
+  .form .name-details .field:first-child{
+    margin-right: 0px;
+  }
+  .form .name-details .field:last-child{
+    margin-left: 0px;
+  }
+
+  .users header img{
+    height: 45px;
+    width: 45px;
+  }
+  .users header .logout{
+    padding: 6px 10px;
+    font-size: 16px;
+  }
+  :is(.users, .users-list) .content .details{
+    margin-left: 15px;
+  }
+
+  .users-list a{
+    padding-right: 10px;
+  }
+
+  .chat-area header{
+    padding: 15px 20px;
+  }
+  .chat-box{
+    min-height: 400px;
+    padding: 10px 15px 15px 20px;
+  }
+  .chat-box .chat p{
+    font-size: 15px;
+  }
+  .chat-box .outogoing .details{
+    max-width: 230px;
+  }
+  .chat-box .incoming .details{
+    max-width: 265px;
+  }
+  .incoming .details img{
+    height: 30px;
+    width: 30px;
+  }
+  .chat-area form{
+    padding: 20px;
+  }
+  .chat-area form input{
+    height: 40px;
+    width: calc(100% - 48px);
+  }
+  .chat-area form button{
+    width: 45px;
+  }
+}

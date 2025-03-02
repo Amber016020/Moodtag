@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANAS - 正面和負面情緒量表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .question {
+            margin-bottom: 50px;
+        }
+
+        .options label {
+            margin-right: 15px;
+        }
+
+        #submitBtn {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #submitBtn:hover {
+            background-color: #45a049;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+</head>
+
+<body>
+    <h1>PANAS - 正面和負面情緒量表</h1>
+    <p style="text-align: center"><strong>以下有許多描述不同感受或情緒的單字，閱讀每個項目，選出你現在有這種感覺的程度</strong></p>
+    <form id="susForm">
+        <div class="question-container" style="display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: left; min-height: 100vh;">
+            <div class="question" style="width: 60%; max-width: 600px;">
+            </div>
+        </div>
+        <!-- Add more questions similarly -->
+        <button type="submit" id="submitBtn">提交</button>
+    </form>
+
+    <script>
+        var count = 1;
+        $(document).ready(function(){
+            var questionTopic = ['感興趣的',
+                                '心煩意亂',
+                                '充滿活力',
+                                '心緒不寧',
+                                '幹勁十足',
+                                '內疚懊悔',
+                                '恐懼',
+                                '充滿敵意',
+                                '充滿激情',
+                                '感到自豪',
+                                '生氣暴躁',
+                                '敏銳謹慎',
+                                '扭捏、難為情',
+                                '備受鼓舞',
+                                '緊張不安',
+                                '意志堅定',
+                                '專心致志',
+                                '忐忑不安',
+                                '精力充沛',
+                                '惶恐懼怕',
+                                ];
+
+            
+
+            questionTopic.forEach(element => {
+                var questionTopic_html = '<p>' + count + '. ' + element + '</p>'
+                                    + `<div class="options" style="display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 30px;">
+                                            <label><input type="radio" name="` + count + `"value="1"> 幾乎沒有</label>
+                                            <label><input type="radio" name="` + count + `"value="2"> 比較少</label>
+                                            <label><input type="radio" name="` + count + `"value="3"> 中等程度</label>
+                                            <label><input type="radio" name="` + count + `"value="4"> 比較多</label>
+                                            <label><input type="radio" name="` + count + `"value="5"> 非常多</label>
+                                        </div>`;
+
+                $('.question').append(questionTopic_html);
+                count++;
+            });
+        })
+
+        document.getElementById('susForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            
+            // 獲取當前頁面的 URL
+            var urlParams = new URLSearchParams(window.location.search);
+
+            // 獲取 user 和 mode 的值
+            var user = urlParams.get('user');
+            var mode = urlParams.get('mode');
+            var testOrder = urlParams.get('testOrder');
+
+            var formData = new FormData(event.target);
+
+            var formValues = {};
+            
+            // 計數器，用於跟蹤完成的請求數量
+            let completedRequests = 0;
+            // 需要發送的請求總數
+            let totalRequests = count-1;
+
+            var allOptionsSelected = false;
+            var index = 0;
+
+            // 遍歷每個問題
+            formData.forEach((value, key) => {
+                formValues[key] = value;
+                index++;
+            });
+
+            if( index !== totalRequests ){
+                alert("請作答完成再提交！");
+                return;
+            } 
+            console.log(totalRequests);
+            formData.forEach((value, key) => {
+                let xhr = new XMLHttpRequest();
+                xhr.open("POST", "../php/insert-survey.php", true);
+                xhr.onload = () => {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        if (xhr.status === 200) {
+                            let data = xhr.response;
+                            console.log(data);
+                            // 每完成一個請求，增加計數器
+                            completedRequests++;
+                            console.log(completedRequests);
+                            
+                            // 檢查是否所有的請求都已完成
+                            if (completedRequests === totalRequests) {
+                                console.log('所有請求已完成');
+                                // 在這裡關閉網頁
+                                window.close();
+                            }
+                        }
+                    }
+                }
+                console.log(formValues);
+                xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhr.send("user=" + user + 
+                        "&scaleName=" + 'PANAS' +
+                        "&testOrder=" + testOrder + 
+                        "&mode=" + mode + 
+                        "&question=" + key + 
+                        "&answer=" + value );
+
+                formValues[key] = value;
+
+            });
+            //window.close(); // 關閉網頁
+            console.log('表單已提交');
+        });
+    </script>
+</body>
+
+</html>
