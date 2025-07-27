@@ -3,7 +3,7 @@ var rightChatBox = document.querySelector("#right-chat-box");
 var survey = document.querySelector("#survey");
 var leftUserSelect;
 var rightUserSelect;
-var modeSelect = document.querySelector("#modeSelect").value = 'self-affect';
+var modeSelect = document.querySelector("#modeSelect").value = 'Manual';
 var isPractice = document.getElementById('practiceCheckbox').checked = true;
 var conn;
 var reflesh = false;
@@ -61,12 +61,12 @@ function start(){
 
 function updateState(){
   return new Promise((resolve, reject) => {
-    if(isPractice && modeSelect === 'Moodtag'){
+    if(isPractice && modeSelect === 'MoodTag'){
       document.getElementById('nextPractice').style.display = 'none';
     }
 
     let xhr = new XMLHttpRequest();
-    xhr.open("POST", "php/get-nextLink.php", true);
+    xhr.open("POST", "../php/get-nextLink.php", true);
     xhr.onload = () => {
       if(xhr.readyState === XMLHttpRequest.DONE){
         if(xhr.status === 200){
@@ -107,17 +107,17 @@ document.getElementById('queryBtn').addEventListener('click', function() {
   };
 
   // 取得使用者資料
-  sendRequest("php/get-usersData.php", `userIds=${JSON.stringify(parts)}`, (response) => {
+  sendRequest("../php/get-usersData.php", `userIds=${JSON.stringify(parts)}`, (response) => {
       var userDatas = JSON.parse(response);
       document.querySelectorAll(".chat-area").forEach((chatArea, index) => {
           var { lname, fname, img } = userDatas[index];
           chatArea.querySelector("span").textContent = lname + fname;
-          chatArea.querySelector("img").src = `php/images/${img}`;
+          chatArea.querySelector("img").src = `images/${img}`;
       });
   });
 
   // 取得測試順序
-  sendRequest("php/get-testsequence.php", `user_id=${leftUserSelect}`, (response) => {
+  sendRequest("../php/get-testsequence.php", `user_id=${leftUserSelect}`, (response) => {
       testsequence = JSON.parse(response);
   });
 
@@ -196,7 +196,7 @@ setInterval(() => {
     chatLoad();
 
     let xhr2 = new XMLHttpRequest();
-    xhr2.open("POST", "php/get-survey.php", true);
+    xhr2.open("POST", "../php/get-survey.php", true);
     xhr2.onload = ()=>{
       if(xhr2.readyState === XMLHttpRequest.DONE){
         if(xhr2.status === 200){
@@ -214,7 +214,7 @@ setInterval(() => {
     xhr2.send("user_id="+leftUserSelect + "&mode=" + modeSelect + "&isPractice=" + isPractice);
 
     let xhr3 = new XMLHttpRequest();
-    xhr3.open("POST", "php/get-survey.php", true);
+    xhr3.open("POST", "../php/get-survey.php", true);
     xhr3.onload = ()=>{
       if(xhr3.readyState === XMLHttpRequest.DONE){
         if(xhr3.status === 200){
@@ -237,7 +237,7 @@ setInterval(() => {
 // 取的監看選擇對象
 function getPartnerAndUser(){
   let xhrUserList = new XMLHttpRequest();
-  xhrUserList.open("POST", "php/get-usersList.php", true);
+  xhrUserList.open("POST", "../php/get-usersList.php", true);
   xhrUserList.onload = ()=>{
     if(xhrUserList.readyState === XMLHttpRequest.DONE){
       if(xhrUserList.status === 200){
@@ -258,7 +258,7 @@ function updateUserInfo(uniqueId) {
     if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
       const data = JSON.parse(xhr.responseText);
       if (data) {
-        document.getElementById('user-img').src = `php/images/${data.img}`;
+        document.getElementById('user-img').src = `images/${data.img}`;
         document.getElementById('user-name').textContent = `${data.fname} ${data.lname}`;
       }
     }
@@ -289,7 +289,7 @@ function loadChatContent(url, chatBox, incomingId, outgoingId) {
 
 // 调用通用函数加载左方的聊天室内容
 function chatLoad() {
-  let url = "php/get-chatMoodTagMonitor.php";
+  let url = "../php/get-chatMoodTagMonitor.php";
   loadChatContent(url, leftChatBox, rightUserSelect, leftUserSelect);
   loadChatContent(url, rightChatBox, leftUserSelect, rightUserSelect);
 }

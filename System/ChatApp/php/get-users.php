@@ -23,7 +23,7 @@
                 $query2 = mysqli_query($conn, $sql2);
                 $row2 = mysqli_fetch_assoc($query2);
 
-                $output .= '<option value="control">' .$row['lname']. " " . $row['fname']. '</option>';
+                $output .= '<option value="Control">' .$row['lname']. " " . $row['fname']. '</option>';
             }
         }
         echo $output;

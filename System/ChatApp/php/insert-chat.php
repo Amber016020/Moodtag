@@ -23,10 +23,10 @@
             // Add current time
             $currentTime = date('Y-m-d H:i:s');
             $sql = mysqli_query($conn, "INSERT INTO messages (incoming_msg_id, outgoing_msg_id, msg, pattern , isPractice, msg_time)
-                                        VALUES ({$incoming_id}, {$outgoing_id}, '{$message}', '{control}','{1}', '{$currentTime}')") or die();
+                                        VALUES ({$incoming_id}, {$outgoing_id}, '{$message}', '{Control}','{1}', '{$currentTime}')") or die();
             $msg_id = mysqli_insert_id($conn);
             $sql = mysqli_query($conn, "INSERT INTO emotion (msg_id, emotion, pattern, view_user_id, labeler_user_id, source, isMoodTag, emotion_time)
-                                        VALUES ({$msg_id}, '{$emotion}', '{control}', '{$incoming_id}', {$outgoing_id}, '{Ter}','{1}', '{$currentTime}')") or die();
+                                        VALUES ({$msg_id}, '{$emotion}', '{Control}', '{$incoming_id}', {$outgoing_id}, '{Ter}','{1}', '{$currentTime}')") or die();
         }
     }else{
         header("location: ../login.php");

@@ -10,6 +10,6 @@ if (isset($_GET['language'])) {
   }
 }
 
-$previous_page = $_SERVER['HTTP_REFERER'] ?? 'php/index.php';
+$previous_page = $_SERVER['HTTP_REFERER'] ?? 'index.php';
 header("Location: $previous_page");
 ?>

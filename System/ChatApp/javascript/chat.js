@@ -11,14 +11,14 @@ var form = document.querySelector(".typing-area"),
 // Define a variable to track whether the listener has been added
 var eventListenerAdded = false;
 var chooseEmoji = false;
-var isRecording = true;
+var isRecording = false;
 var lastAffectTime = new Date();
 var isSendingDateTime = 0;
 var timerInterval;
 var totalSeconds;
 var useCoze = false;
-var systemName = 'Moodtag';
-var selfAffect = 'self-affect';
+var systemName = 'MoodTag';
+var selfAffect = 'Manual';
 var isComposing = false;
 var conn;
 var user1SurveyCompleted = false;
@@ -159,7 +159,7 @@ setInterval(() => {
       surveys: surveys
     };
 
-    xhr.open("POST", "php/get-preSurvey.php", true);
+    xhr.open("POST", "../php/get-preSurvey.php", true);
     xhr.onload = () => {
       if (xhr.status === 200) {
         let response = JSON.parse(xhr.responseText);
@@ -268,21 +268,21 @@ function bindInit(){
   document.getElementById('modeEmoji').querySelectorAll('img').forEach(details => {
 
     details.addEventListener('mouseover', () => {
-      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('picture/pens.ico');
+      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('images/pens.ico');
       if(computedStyle && !chooseEmoji){
         details.classList.add('highlight-border');
       }
     }); 
 
     details.addEventListener('mouseout', () => {
-      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('picture/pens.ico');
+      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('images/pens.ico');
       if(computedStyle && !chooseEmoji){
         details.classList.remove('highlight-border');
       }
     });
 
     details.addEventListener('click', () => {
-      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('picture/pens.ico');
+      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('images/pens.ico');
       if(computedStyle){
         chooseEmoji = true;
       }
@@ -316,7 +316,7 @@ function updateTimer() {
 function nextModeLink(scale){
   var nextModeLink = document.getElementById('nextModeLink');
   let xhr = new XMLHttpRequest();
-  xhr.open("POST", "php/get-nextLink.php", true);
+  xhr.open("POST", "get-nextLink.php", true);
   xhr.onload = ()=>{
     if(xhr.readyState === XMLHttpRequest.DONE){
         if(xhr.status === 200){
@@ -341,15 +341,15 @@ function nextModeLink(scale){
 
 function displayNextLinkText(){
   var practiceTexts = {
-    'self-affect': '<h1>進入下一練習測試模式</h1>',
-    'Moodtag': '<h1>練習結束，進入正式實驗</h1>'
+    'Manual': '<h1>進入下一練習測試模式</h1>',
+    'MoodTag': '<h1>練習結束，進入正式實驗</h1>'
   };
 
   var modeTexts = {
     'neutral': '<h1>進入下一模式</h1>',
-    'control': '<h1>該模式已結束，進入下一模式</h1>',
-    'self-affect': '<h1>該模式已結束，進入下一模式</h1>',
-    'Moodtag': '<h1>該模式已結束，進入下一模式</h1>'
+    'Control': '<h1>該模式已結束，進入下一模式</h1>',
+    'Manual': '<h1>該模式已結束，進入下一模式</h1>',
+    'MoodTag': '<h1>該模式已結束，進入下一模式</h1>'
   };
 
   if (isPractice === "1") {
@@ -360,7 +360,7 @@ function displayNextLinkText(){
 }
 
 async function sendRequest(data, chatHistory, incoming_id, outcoming_id, mode, isPractice) {
-  var apiKey = 'XXXXXXXXXX';
+  var apiKey = 'sk-proj-XXXXXX';
   var prompt = data.msg;
 
   var formattedChatHistory = chatHistory.map(item => {
@@ -455,7 +455,7 @@ function updateTextContent(mode) {
   var topic = "";
 
   document.getElementById('modeEmoji').style.display = 'none';
-  modeIntroImg.setAttribute('src', mode === 'Moodtag' ? "picture/robot.svg" : "picture/pens.png");
+  modeIntroImg.setAttribute('src', mode === 'MoodTag' ? "images/robot.svg" : "images/pens.png");
   modeIntroImg.style.display = 'none';
   taskDescription.style.fontSize = '20px';
   document.getElementById('confirmButton').style.display = ''; // 顯示按鈕
@@ -474,41 +474,41 @@ function updateTextContent(mode) {
 
   // Show the current topic to chat about
   let xhr = new XMLHttpRequest();
-  xhr.open("POST", "php/get-Topic.php", true);
+  xhr.open("POST", "../php/get-Topic.php", true);
   xhr.onload = ()=>{
     if(xhr.readyState === XMLHttpRequest.DONE){
       if(xhr.status === 200){
         topic = xhr.response;
         switch(mode) {
-          case 'Moodtag':
+          case 'MoodTag':
             if(isPractice === '1'){
-              document.querySelector('.modal-header').innerHTML = '<h1>如何使用 Moodtag 標記情緒：</h1>';
+              document.querySelector('.modal-header').innerHTML = '<h1>如何使用 MoodTag 標記情緒：</h1>';
 
               taskDescription.textContent = 
               `<b><h3>接下來的任務：</h3>隨意與對方傳送訊息，並試著修改或加上情緒標籤。</b>
               
-              <b style="color: #ff6600;"><h3>重點：</h3>Step 1：Moodtag 會自動辨識訊息的情緒，如果你不認同 Moodtag 的標記，你可以修改或刪除標記
-                  Step 2：對於 Moodtag 沒有辨識到的訊息，你也可以手動加上情緒標籤 </b>
+              <b style="color: #ff6600;"><h3>重點：</h3>Step 1：MoodTag 會自動辨識訊息的情緒，如果你不認同 MoodTag 的標記，你可以修改或刪除標記
+                  Step 2：對於 MoodTag 沒有辨識到的訊息，你也可以手動加上情緒標籤 </b>
               
               <b style="text-align: center; display: block; color: #FF0000;">更改情緒標籤操作方式如下⬇️⬇️⬇️</b>`;
               taskDescription.innerHTML = taskDescription.textContent.replace(/\n/g, '<br>');
               
               labelGif.style = "border: 3px solid #FF0000";
-              labelGif.src = "picture/demo/labelChange.gif";
+              labelGif.src = "images/demo/labelChange.gif";
               break;
             }
             document.getElementById('affectLabelSource').innerText = '';
             modeIntroText.textContent = "MoodTag 會即時分析你的文字，並為你標示出潛在的情緒，幫助你更好地理解自己的感受。如果有問題請隨時告訴實驗人員！";
             modeIntroText.classList.add('mode-intro-text-M'); 
             modeIntroImg.classList.add('mode-intro-img-M'); 
-            taskTitle.innerText = 'Moodtag標記';
-            labelGif.src = "picture/demo/labelChange.gif";
+            taskTitle.innerText = 'MoodTag標記';
+            labelGif.src = "images/demo/labelChange.gif";
             modeIntroImg.style.display = 'block';
             taskDescription.textContent = 
             `<b>接下來的任務：需與對方進行文字聊天，針對你們選擇的話題進行抒發，讓心情回到當下狀態。</b>
             <h3 style="color: #001eff;">➡️話題：` + topic + `⬅️</h3>
-            <b style="color: #ff6600;"><h3>重點：</h3>Step 1：Moodtag 會自動辨識訊息的情緒，如果你不認同 Moodtag 的標記，你可以修改或刪除標記
-                Step 2：對於 Moodtag 沒有辨識到的訊息，你也可以手動加上情緒標籤 </b>
+            <b style="color: #ff6600;"><h3>重點：</h3>Step 1：MoodTag 會自動辨識訊息的情緒，如果你不認同 MoodTag 的標記，你可以修改或刪除標記
+                Step 2：對於 MoodTag 沒有辨識到的訊息，你也可以手動加上情緒標籤 </b>
             
             <b>過程中除非特殊問題，否則不會中斷實驗，10 分鐘後實驗人員會提醒你們對話結束。</b>
       
@@ -518,7 +518,7 @@ function updateTextContent(mode) {
             labelGif.style = "border: 3px solid #FF0000";
             break;
       
-          case 'self-affect':
+          case 'Manual':
             if(isPractice === '1'){
               document.querySelector('.modal-header').innerHTML = '<h1>如何自己標記情緒：</h1>';
               taskDescription.textContent = 
@@ -533,7 +533,7 @@ function updateTextContent(mode) {
 
               taskDescription.innerHTML = taskDescription.textContent.replace(/\n/g, '<br>');
               labelGif.style = "border: 3px solid #FF0000";
-              labelGif.src = "picture/demo/labelDone.gif";
+              labelGif.src = "images/demo/labelDone.gif";
               break;
             }
             document.getElementById('affectLabelSource').innerText = '';
@@ -541,7 +541,7 @@ function updateTextContent(mode) {
             modeIntroText.classList.add('mode-intro-text-P'); 
             modeIntroImg.classList.add('mode-intro-img-P'); 
             taskTitle.innerText = '自我標記';
-            labelGif.src = "picture/demo/labelDone.gif";
+            labelGif.src = "images/demo/labelDone.gif";
             modeIntroImg.style.display = 'block'
       
             taskDescription.textContent = 
@@ -558,7 +558,7 @@ function updateTextContent(mode) {
             taskDescription.innerHTML = taskDescription.textContent.replace(/\n/g, '<br>');
             labelGif.style = "border: 3px solid #FF0000";
             break;
-          case 'control':
+          case 'Control':
             taskTitle.innerText = '一般模式';
             taskDescription.textContent = 
             `<b>接下來的任務：在該階段中，需與對方進行文字聊天，針對你們選擇的話題進行抒發，讓心情回到當下狀態。</b>
@@ -689,7 +689,7 @@ function connectWebSocket() {
       if(useCoze){
         console.log('php/coze.php');
         let xhr = new XMLHttpRequest();
-        xhr.open("POST", "php/coze.php", true);
+        xhr.open("POST", "../php/coze.php", true);
         xhr.onload = () => {
           if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
@@ -739,7 +739,7 @@ function connectWebSocket() {
         chat_html += '<div id="emoTag" style="font-size: 25px;">' + ferEmotion + '</div>';
       }
 
-      chat_html += '<img class="smile" src="picture/smile.png" alt="Smile"><p>' + data.msg +
+      chat_html += '<img class="smile" src="images/smile.png" alt="Smile"><p>' + data.msg +
                   '</p></div><div id="affectLabel" class="affect outgoing">' + ferEmotion + '</div></div>';
 
     }
@@ -747,7 +747,7 @@ function connectWebSocket() {
     else if (data.from === 'NotMe' && data.incomingUserId === outcoming_id && data.outcomingUserId === incoming_id)
     {
       localStorage.setItem('partnerSentFirstMessage', 'true');  
-      var chat_html = '<div id="'+ data.msg_id +'" class="chat incoming"><div class="details"><img class="profile" src="php/images/' +
+      var chat_html = '<div id="'+ data.msg_id +'" class="chat incoming"><div class="details"><img class="profile" src="images/' +
           data.img + '" alt=""><p>' + data.msg + '</p>';
       
       // add LLM emotion recognition results
@@ -755,7 +755,7 @@ function connectWebSocket() {
         chat_html += '<div id="emoTag" style="font-size: 25px;">' + ferEmotion + '</div>';
       }
 
-      chat_html += '<div class="read-status"><span class="read">已讀</span><span class="time">' + formattedTime + '</span><img class="smile" src="picture/smile.png" alt="Smile"></div>' + 
+      chat_html += '<div class="read-status"><span class="read">已讀</span><span class="time">' + formattedTime + '</span><img class="smile" src="images/smile.png" alt="Smile"></div>' + 
                   '</div><div id="affectLabel" class="affect incoming">' + ferEmotion + '</div></div>';
     }
     // Messages from other chat rooms no display
@@ -771,13 +771,13 @@ function connectWebSocket() {
     $('.chat-box').append(chat_html);
 
     // Locate the newly transmitted message and add emotion tagging and related events and add smile images events
-    if (mode !== 'control' && mode !== 'neutral' ) {
+    if (mode !== 'Control' && mode !== 'neutral' ) {
       addSmileEvents([document.getElementById(data.msg_id)]);
     }
     // Scroll to the bottom of the chat box
     scrollToBottom();
 
-    if (mode === 'Moodtag' && !localStorage.getItem('userSentFirstMessage') && !localStorage.getItem('partnerSentFirstMessage')) {
+    if (mode === 'MoodTag' && !localStorage.getItem('userSentFirstMessage') && !localStorage.getItem('partnerSentFirstMessage')) {
       localStorage.setItem('userSentFirstMessage', 'true');  
       localStorage.setItem('partnerSentFirstMessage', 'true');  
       location.reload();  // 強制重新整理頁面
@@ -796,8 +796,8 @@ $(document).ready(function(){
   }
 
   document.getElementById('confirmButton').addEventListener('click', function() {
-    // 檢查是否符合 'Moodtag' 模式且不是練習模式，並且還沒重整過
-    if (mode === 'Moodtag' && !localStorage.getItem('hasReloaded')) {
+    // 檢查是否符合 'MoodTag' 模式且不是練習模式，並且還沒重整過
+    if (mode === 'MoodTag' && !localStorage.getItem('hasReloaded')) {
       // 設置為已重整過的狀態
       localStorage.setItem('hasReloaded', 'true');  
       location.reload();  // 強制重新整理頁面
@@ -808,7 +808,7 @@ $(document).ready(function(){
   });
 
   // 如果頁面已經重整過，則直接執行確認邏輯並自動點擊按鈕
-  if (mode === 'Moodtag' && localStorage.getItem('hasReloaded')) {
+  if (mode === 'MoodTag' && localStorage.getItem('hasReloaded')) {
     handleConfirmAction();  // 執行確認按鈕邏輯
     document.getElementById('confirmButton').click();  // 模擬按鈕點擊
   }
@@ -840,15 +840,15 @@ $(document).ready(function(){
   let xhr = new XMLHttpRequest();
 
   if(mode === systemName){
-    xhr.open("POST", "php/get-chatMoodTag.php", true);
+    xhr.open("POST", "../php/get-chatMoodTag.php", true);
     load(xhr)
   }
   else if(mode === selfAffect){
-    xhr.open("POST", "php/get-chatSelfAffect.php", true);
+    xhr.open("POST", "../php/get-chatSelfAffect.php", true);
     load(xhr)
   }
   else{
-    xhr.open("POST", "php/get-chat.php", true);
+    xhr.open("POST", "../php/get-chat.php", true);
     load(xhr)
   }
   // Initial connection
@@ -868,7 +868,7 @@ sendBtn.onclick = ()=>{
     mode : mode,
     isPractice : isPractice,
     isMoodTag : 0,
-    type: mode === systemName ? 'GPT' : 'control',
+    type: mode === systemName ? 'GPT' : 'Control',
     typeStartTime : isSendingDateTime
   };
   isSendingDateTime = 0;
@@ -898,7 +898,7 @@ function hideEmojiImages(event) {
     document.removeEventListener('click', hideEmojiImages);
   }
 
-  var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('picture/pens.ico');
+  var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('images/pens.ico');
   if(event.target.id === 'modeIntroImg' && computedStyle){
     document.querySelector(".wrapper").style.cursor = "auto";
     // Iterate through these img tags and set their border to none
@@ -927,7 +927,7 @@ function addSmileEvents(detailsElements){
         details.querySelector('.smile').style.backgroundColor = smileBackgroundColor;
       }
 
-      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('picture/pens.ico');
+      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('images/pens.ico');
       // Check if the required mouse style is included in the style
       if (computedStyle) {
         // Add a border when the mouse enters
@@ -945,7 +945,7 @@ function addSmileEvents(detailsElements){
         details.querySelector('.time').style.display = 'block';
       }
 
-      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('picture/pens.ico');
+      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('images/pens.ico');
 
       // Check if the required mouse style is included in the style
       if (computedStyle) {
@@ -957,7 +957,7 @@ function addSmileEvents(detailsElements){
     details.addEventListener('click', () => {
 
       var chooseEmojiImg = document.querySelector('img.highlight-border');
-      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('picture/pens.ico');
+      var computedStyle = window.getComputedStyle(document.querySelector('.wrapper')).cursor.includes('images/pens.ico');
       if(chooseEmojiImg === null || computedStyle === null){
         return;
       }      
@@ -979,7 +979,7 @@ function addSmileEvents(detailsElements){
 
         // Send XMLHttpRequest to insert emoji into database
         let xhr = new XMLHttpRequest();
-        xhr.open("POST", "php/insert-textEmo.php", true);
+        xhr.open("POST", "../php/insert-textEmo.php", true);
         xhr.onload = ()=>{
           if(xhr.readyState === XMLHttpRequest.DONE){
             if(xhr.status === 200){
@@ -1048,7 +1048,7 @@ function addSmileEvents(detailsElements){
 
           // Send XMLHttpRequest to insert emoji into database
           let xhr = new XMLHttpRequest();
-          xhr.open("POST", "php/insert-textEmo.php", true);
+          xhr.open("POST", "../php/insert-textEmo.php", true);
           xhr.onload = ()=>{
             if(xhr.readyState === XMLHttpRequest.DONE){
               if(xhr.status === 200){

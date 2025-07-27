@@ -5,7 +5,7 @@
   }
 ?>
 
-<?php include_once "php/header.php"; ?>
+<?php include_once "header.php"; ?>
 <body>
   <div class="wrapper">
     <section class="form login">
@@ -27,7 +27,7 @@
       </form>
       <div class="link"><?php echo $lang['signup_link']; ?><a href="signup.php"><?php echo $lang['signup_now']; ?></a></div>
     
-      <form class="lang" action="php/switch_language.php" method="GET">
+      <form class="lang" action="switch_language.php" method="GET">
         <label for="language"><?php echo $lang['Select_Language']; ?></label>
         <select name="language" id="language" onchange="this.form.submit()">
           <option value="en" <?php echo ($language == 'en') ? 'selected' : ''; ?>>English</option>
@@ -38,8 +38,8 @@
   </div>
 
   
-  <script src="javascript/pass-show-hide.js"></script>
-  <script src="javascript/login.js"></script>
+  <script src="../javascript/pass-show-hide.js"></script>
+  <script src="../javascript/login.js"></script>
 
 </body>
 </html>

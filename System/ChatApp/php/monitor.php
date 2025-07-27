@@ -1,11 +1,11 @@
 <?php 
   session_start();
-  include_once "php/config.php";
+  include_once "config.php";
   if(!isset($_SESSION['unique_id'])){
     header("location: login.php");
   }
 ?>
-<?php include_once "php/header.php"; ?>
+<?php include_once "header.php"; ?>
 <body>
   <!-- 左邊 -->
   <div class="wrapper">
@@ -13,7 +13,7 @@
       <span>名字</span>      
       <header>
         <a href="users.php" class="back-icon"><i class="fas fa-arrow-left"></i></a>
-        <img src="php/images/<?php echo $row['img']; ?>" alt="">
+        <img src="images/<?php echo $row['img']; ?>" alt="">
         <div class="details">
           <span class="userName"></span>
         </div>
@@ -28,7 +28,7 @@
       <span>名字</span>
       <header>
         <a href="users.php" class="back-icon"><i class="fas fa-arrow-left"></i></a>
-        <img src="php/images/<?php echo $row['img']; ?>" alt="">
+        <img src="images/<?php echo $row['img']; ?>" alt="">
         <div class="details">
           <span class="userName"></span>
           <span  style="padding-left: 100px;"></span>
@@ -53,9 +53,9 @@
       <label for="modeSelect"><?php echo $lang['select_mode']; ?>：</label>
       <select id="modeSelect">
         <option value="neutral"><?php echo $lang['neutral']; ?></option>
-        <option value="control"><?php echo $lang['control']; ?></option>
-        <option value="self-affect"><?php echo $lang['self-affect']; ?></option>
-        <option value="Moodtag"><?php echo $lang['Moodtag']; ?></option>
+        <option value="Control"><?php echo $lang['Control']; ?></option>
+        <option value="Manual"><?php echo $lang['Manual']; ?></option>
+        <option value="MoodTag"><?php echo $lang['MoodTag']; ?></option>
       </select>
     </div>
     <!-- 練習模式 -->
@@ -70,7 +70,7 @@
     </div>
     <div id="survey1">
     </div>
-    <div id="currentState">練習模式：self-affect</div>
+    <div id="currentState">練習模式：Manual</div>
     <div id="time"></div>
     <div id="buttonContainer" style="display: flex; justify-content: center; align-items: center; margin-top: 30px;">
         <button id="skipBreakButton" style="font-weight: bold; font-size: 15px;">跳過休息</button>
@@ -87,7 +87,7 @@
     <!-- TPA信任量表、聊天模式使用偏好調查 -->
     <button id="finalSurvey" class="experiment-control-button">最後的問卷連結</button>
   </div>
-  <script type="module" src="javascript/monitor.js"></script>
+  <script type="module" src="../javascript/monitor.js"></script>
 
 </body>
 </html>

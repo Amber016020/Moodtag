@@ -44,21 +44,21 @@
                     $output .= '<div id="' . $row['msgId'] . '" class="chat outgoing">
                                     <div class="details">
                                         <span class="time">' . $msgTimeFormatted . '</span>
-                                        <img class="smile" src="picture/smile.png" alt="Smile">
+                                        <img class="smile" src="images/smile.png" alt="Smile">
                                         <p>' . $row['msg'] ;
 
                     $output .= '</p></div><div id="affectLabel" class="affect outgoing"></div></div>';
                 }else{
                     $output .= '<div id="' . $row['msgId'] . '" class="chat incoming">
                                     <div class="details">
-                                        <img class="profile round" src="php/images/'.$row['img'].'" alt=""> 
+                                        <img class="profile round" src="images/'.$row['img'].'" alt=""> 
                                         <p>' . $row['msg'];
 
                     $output .= '<div class="read-status">
                                     <span class="read">已讀</span>
                                     <span class="time">' . $msgTimeFormatted . '</span>
                                 </div>
-                                <img class="smile" src="picture/smile.png" alt="Smile">
+                                <img class="smile" src="images/smile.png" alt="Smile">
                                 </div>';
 
                     $output .= '<div id="affectLabel" class="affect incoming"></div></div>';

@@ -1,4 +1,4 @@
-# Moodtag
+# MoodTag
 
 > **題目：** MoodTag: Enhancing Emotion Regulation in Dyadic Instant Messaging Conversations Using AI-Assisted Affect Labeling  
 > **作者：** 吳佳融, 指導教授：程芙茵

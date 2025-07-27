@@ -1,11 +1,11 @@
 <?php 
   session_start();
-  include_once "php/config.php";
+  include_once "config.php";
   if(!isset($_SESSION['unique_id'])){
     header("location: login.php");
   }
 ?>
-<?php include_once "php/header.php"; ?>
+<?php include_once "header.php"; ?>
 <body>
   <div class="wrapper">
     <div id="alertMessage" style="text-align: center; color: red; font-weight: bold; display:none;">
@@ -23,21 +23,21 @@
           }
         ?>
         <a href="users.php" class="back-icon"><i class="fas fa-arrow-left"></i></a>
-        <img class="profile round" src="php/images/<?php echo $row['img']; ?>" alt="">
+        <img class="profile round" src="images/<?php echo $row['img']; ?>" alt="">
         <div class="details">
           <span><?php echo $row['lname'] .$row['fname'] ?></span>
           <div class="faceEmo" style="display:none">
             <span>FER</span>
             <p>🫥</p>
           </div> 
-          <span id="affectLabelSource" style="padding-left: 10px; <?php if ($_GET['mode'] === 'control') echo 'display: none;'; ?>"></span>
+          <span id="affectLabelSource" style="padding-left: 10px; <?php if ($_GET['mode'] === 'Control') echo 'display: none;'; ?>"></span>
         </div>
       </header>
       <div class="chat-box">
 
       </div>
       <div class="details">    
-        <img class="smile" src="picture/smile.png" alt="Smile">
+        <img class="smile" src="images/smile.png" alt="Smile">
         <p id="modeIntroText" ></p>
         <img id="modeIntroImg" src="" alt="">
       </div>
@@ -85,7 +85,7 @@
     </div>
   </div>
 
-  <script type="module" src="javascript/chat.js"></script>
+  <script type="module" src="../javascript/chat.js"></script>
   <script src="https://github.com/eligrey/FileSaver.js/"></script>
 
 </body>

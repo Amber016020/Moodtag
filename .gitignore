@@ -4,16 +4,11 @@
 # Ignore experimental private data
 *.csv
 *.sql
+Data_Analysis/R_Code/*.html
 
 # Ensure models are ignored unless explicitly needed
 *.h5  
 *.pkl 
-
-# Ignore user-uploaded profile pictures  
-System/ChatApp/php/images/*
-
-# Ignore system-provided images  
-System/ChatApp/picture/*
 
 # Ignore recorded videos or media files  
 System/ChatApp/movie/*  

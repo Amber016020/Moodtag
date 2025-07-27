@@ -44,7 +44,7 @@
 
 <body>
     <h1>ABCCT - 評估溝通技術對情感影響量表</h1>
-    <p style="text-align: center"><strong>請根據您剛才使用Moodtag的體驗，評估以下敘述的認同程度</strong></p>
+    <p style="text-align: center"><strong>請根據您剛才使用MoodTag的體驗，評估以下敘述的認同程度</strong></p>
     <form id="susForm">
         <div class="question-container" style="display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: left; min-height: 100vh;">
             <div class="question" style="width: 60%; max-width: 600px;">
@@ -84,7 +84,7 @@
                                 '我擔心其他人可能會無意中聽到或看到<X>和我使用 <M> 共享的內容。',
                                 '我擔心在使用 <M> 進行聯繫期間侵犯了<X>的隱私。',
                                 ];
-            const replacementValues = ["Moodtag", "朋友"];
+            const replacementValues = ["MoodTag", "朋友"];
             
 
             questionTopic.forEach(element => {
@@ -163,7 +163,7 @@
                 xhr.send("user=" + user + 
                         "&scaleName=" + 'ABCCT' +
                         "&testOrder=" + testOrder + 
-                        "&mode=" + "Moodtag" + 
+                        "&mode=" + "MoodTag" + 
                         "&question=" + key + 
                         "&answer=" + value );
 

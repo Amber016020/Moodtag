@@ -141,7 +141,7 @@ class Chat implements MessageComponentInterface {
         // 量表類，不需要insert進message table
         else{
             // 一般訊息/臉部表情/圖片，不需要辨識文字情緒
-            if($data['type'] == 'Fer' || $data['type'] == 'control' || $data['type'] == 'emoImg'){
+            if($data['type'] == 'Fer' || $data['type'] == 'Control' || $data['type'] == 'emoImg'){
                 $data['msg_id'] = $this->insertChat($data['incomingUserId'],$data['outcomingUserId'],$data['msg'],null,$data['mode'],$data['type'],$data['isPractice'],$data['isMoodTag'],$data['typeStartTime'],$data['time']);
             }         
         }

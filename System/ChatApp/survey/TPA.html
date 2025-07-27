@@ -44,7 +44,7 @@
 
 <body>
     <h1>TPA - 人工智慧信任量表</h1>
-    <p style="text-align: center"><strong>本量表旨在評估您對人工智慧系統 Moodtag 的信任感受，請根據您剛才的使用體驗，選擇您對每個敘述的認同程度。</strong></p>
+    <p style="text-align: center"><strong>本量表旨在評估您對人工智慧系統 MoodTag 的信任感受，請根據您剛才的使用體驗，選擇您對每個敘述的認同程度。</strong></p>
     <form id="susForm">
         <div class="question-container" style="display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: left; min-height: 100vh;">
             <div class="question" style="width: 80%; max-width: 800px;">
@@ -57,18 +57,18 @@
     <script>
         var count = 1;
         $(document).ready(function(){
-            var questionTopic = ['Moodtag具有欺騙性',
-                                'Moodtag以卑鄙的方式行事',
-                                '我對Moodtag的意圖、行為或輸出持懷疑態度',
-                                '我對Moodtag的意圖持懷疑態度',
-                                'Moodtag的行為將產生有害或傷害性的結果',
-                                '我對Moodtag充滿信心',
-                                'Moodtag提供安全保障',
-                                'Moodtag具有完整性',
-                                'Moodtag是可靠的',
-                                'Moodtag是可以信賴的',
-                                '我可以信任Moodtag',
-                                '我熟悉Moodtag',
+            var questionTopic = ['MoodTag具有欺騙性',
+                                'MoodTag以卑鄙的方式行事',
+                                '我對MoodTag的意圖、行為或輸出持懷疑態度',
+                                '我對MoodTag的意圖持懷疑態度',
+                                'MoodTag的行為將產生有害或傷害性的結果',
+                                '我對MoodTag充滿信心',
+                                'MoodTag提供安全保障',
+                                'MoodTag具有完整性',
+                                'MoodTag是可靠的',
+                                'MoodTag是可以信賴的',
+                                '我可以信任MoodTag',
+                                '我熟悉MoodTag',
                                 ];
 
             questionTopic.forEach(element => {
@@ -148,7 +148,7 @@
                 xhr.send("user=" + user + 
                         "&scaleName=" + 'TPA' +
                         "&testOrder=" + testOrder + 
-                        "&mode=" + "Moodtag" + 
+                        "&mode=" + "MoodTag" + 
                         "&question=" + key + 
                         "&answer=" + value );
 

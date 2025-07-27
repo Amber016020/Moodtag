@@ -1,11 +1,11 @@
 <?php 
   session_start();
-  include_once "php/config.php";
+  include_once "config.php";
   if(!isset($_SESSION['unique_id'])){
     header("location: login.php");
   }
 ?>
-<?php include_once "php/header.php"; ?>
+<?php include_once "header.php"; ?>
 <body>
   <div class="wrapper">
     <section class="users">
@@ -49,16 +49,17 @@
               $row = mysqli_fetch_assoc($sql);
             }
           ?>
-          <img src="php/images/<?php echo $row['img']; ?>" alt="">
+          <img src="images/<?php echo $row['img']; ?>" alt="">
           <div class="details">
             <span><?php echo $row['lname']. " " . $row['fname'] ?></span>
             <p><?php echo $row['status']; ?></p>
           </div>
         </div>
-        <a href="php/logout.php?logout_id=<?php echo $row['unique_id']; ?>" class="logout"><?php echo $lang['logout']; ?></a>
+        <a href="logout.php?logout_id=<?php echo $row['unique_id']; ?>" class="logout"><?php echo $lang['logout']; ?></a>
       </header>
       <?php if (isset($_SESSION['isExperimenter']) && $_SESSION['isExperimenter'] == 1): ?>
-        <a href="php/monitor.php" class="logout"><?php echo $lang['monitor']; ?></a>
+        <a href="monitor.php" class="logout"><?php echo $lang['monitor']; ?></a>
+        <a href="setparticipant.php" class="logout"><?php echo $lang['setparticipant']; ?></a>
       <?php endif; ?>      
       <div style="display: grid;">
         <a id="nextModeLink" href="#">
@@ -70,7 +71,7 @@
     </section>
   </div>
 
-  <script src="javascript/startPage.js"></script>
+  <script src="../javascript/startPage.js"></script>
 
 </body>
 </html>

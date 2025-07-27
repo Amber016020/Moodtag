@@ -32,9 +32,9 @@
         <label for="modeSelect"><?php echo $lang['select_mode']; ?>：</label>
         <select id="modeSelect">
           <option value="neutral"><?php echo $lang['neutral']; ?></option>
-          <option value="control"><?php echo $lang['control']; ?></option>
-          <option value="self-affect"><?php echo $lang['self-affect']; ?></option>
-          <option value="Moodtag"><?php echo $lang['Moodtag']; ?></option>
+          <option value="Control"><?php echo $lang['control']; ?></option>
+          <option value="Manual"><?php echo $lang['self-affect']; ?></option>
+          <option value="MoodTag"><?php echo $lang['Moodtag']; ?></option>
         </select>
       </div>
       <div style="text-align: right; margin-right: 20px;">

@@ -87,7 +87,7 @@
                         }
                     }
 
-                    $output .= '<img class="smile" src="picture/smile.png" alt="Smile"><p>' . $row['msg'] ;
+                    $output .= '<img class="smile" src="images/smile.png" alt="Smile"><p>' . $row['msg'] ;
                     // todo：文字情緒辨識時，雙方都要insert affectlabel
                     if(isset($row['affectEmo']) && isset($emotionsEmojiDict[$row['affectEmo']])) {
                         $output .= '</p></div><div id="affectLabel" class="affect outgoing">' . $emotionsEmojiDict[$row['affectEmo']] . '</div></div>';
@@ -101,7 +101,7 @@
                     if(isset($row['latest_emotion_by_human']) && isset($emotionsEmojiDict[$row['latest_emotion_by_human']])) {
                         $output .= $emotionsEmojiDict[$row['latest_emotion_by_human']];
                     } 
-                    $output .= '</div><img class="profile round" src="php/images/'.$row['img'].'" alt="">
+                    $output .= '</div><img class="profile round" src="images/'.$row['img'].'" alt="">
                                         <p>' . $row['msg'] . '</p>';
                                         
                     if(isset($row['latest_emotion']) && isset($emotionsEmojiDict[$row['latest_emotion']])) {
@@ -112,7 +112,7 @@
                             $output .= '<div id="emoTag" style="background-color: purple;color: white;">' . $emotionsToCh[$row['latest_emotion']] . '</div>';
                         }
                     }            
-                    $output .= '<span class="time">' . $msgTimeFormatted . '</span><img class="smile" src="picture/smile.png" alt="Smile"></div>';
+                    $output .= '<span class="time">' . $msgTimeFormatted . '</span><img class="smile" src="images/smile.png" alt="Smile"></div>';
                     if(isset($row['affectEmo']) && isset($emotionsEmojiDict[$row['affectEmo']])) {
                         $output .= '<div id="affectLabel" class="affect incoming">' . $emotionsEmojiDict[$row['affectEmo']] . '</div></div>';
                     } else {

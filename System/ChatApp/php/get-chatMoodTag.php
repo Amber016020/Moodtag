@@ -75,7 +75,7 @@
                     if(isset($row['latest_emotion']) && isset($emotionsEmojiDict[$row['latest_emotion']])) {
                         $output .= '<div id="emoTag" style="font-size: 25px;">' . $emotionsEmojiDict[$row['latest_emotion']] . '</div>';
                     }                    
-                    $output .= '<img class="smile" src="picture/smile.png" alt="Smile">';
+                    $output .= '<img class="smile" src="images/smile.png" alt="Smile">';
                     // 如果有人為標記的訊息，訊息要加綠色外框
                     if(isset($row['latest_emotion_by_human']) && isset($emotionsEmojiDict[$row['latest_emotion_by_human']]) !== false) {
                         $output .= '<p style="outline: 4px solid #00bb8c">' . $row['msg'] ;
@@ -96,7 +96,7 @@
                     if(isset($row['latest_emotion_by_human']) && isset($emotionsEmojiDict[$row['latest_emotion_by_human']])) {
                         $output .= $emotionsEmojiDict[$row['latest_emotion_by_human']];
                     } 
-                    $output .= '</div><div class="details"><img class="profile round" src="php/images/'.$row['img'].'" alt="">';
+                    $output .= '</div><div class="details"><img class="profile round" src="images/'.$row['img'].'" alt="">';
 
                     // 如果有人為標記的訊息，訊息要加綠色外框
                     if(isset($row['needOutLine']) && isset($emotionsEmojiDict[$row['needOutLine']]) !== false) {
@@ -113,7 +113,7 @@
                                     <span class="read">已讀</span>
                                     <span class="time">' . $msgTimeFormatted . '</span>
                                 </div>
-                                <img class="smile" src="picture/smile.png" alt="Smile">
+                                <img class="smile" src="images/smile.png" alt="Smile">
                                 </div>';
                     // 如果是自己有做情緒標記的訊息，要在下面加上情緒標記
                     if(isset($row['affectEmo']) && isset($emotionsEmojiDict[$row['affectEmo']])) {

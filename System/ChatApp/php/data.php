@@ -29,9 +29,9 @@
         ($row['status'] == "Offline now") ? $offline = "offline" : $offline = "";
         ($outgoing_id == $row['unique_id']) ? $hid_me = "hide" : $hid_me = "";
 
-        $output .= '<a href="php/chat.php?user_id='. $row['unique_id'] .'&mode=' . $mode .'&practice=' . $practice .'">
+        $output .= '<a href="chat.php?user_id='. $row['unique_id'] .'&mode=' . $mode .'&practice=' . $practice .'">
                     <div class="content">
-                    <img src="php/images/'. $row['img'] .'" alt="">
+                    <img src="images/'. $row['img'] .'" alt="">
                     <div class="details">
                         <span>'. $row['lname']. " " . $row['fname'] .'</span>
                         <p>'. $you . $msg .'</p>

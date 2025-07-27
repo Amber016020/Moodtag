@@ -59,14 +59,14 @@
         $(document).ready(function(){
             var questionTopic = ['我喜歡使用一般模式進行聊天',
                                 '我喜歡自己標記情緒的聊天方式',
-                                '我喜歡使用Moodtag標記情緒的聊天方式',
+                                '我喜歡使用MoodTag標記情緒的聊天方式',
                                 ];
 
             // 假設有對應問題的範例GIF
             var gifPaths = [
-                '../picture/demo/control.png',
-                '../picture/demo/labelDone.gif', 
-                '../picture/demo/moodtag.gif' 
+                '../images/demo/control.png',
+                '../images/demo/labelDone.gif', 
+                '../images/demo/moodtag.gif' 
             ];
 
             questionTopic.forEach(function(element, index) {
@@ -149,7 +149,7 @@
                 xhr.send("user=" + user + 
                         "&scaleName=" + 'Preference' +
                         "&testOrder=" + testOrder + 
-                        "&mode=" + "Moodtag" + 
+                        "&mode=" + "MoodTag" + 
                         "&question=" + key + 
                         "&answer=" + value );
 

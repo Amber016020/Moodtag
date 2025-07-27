@@ -21,18 +21,18 @@
         while($row = mysqli_fetch_assoc($query)){
             if ($practice) {
                 switch ($mode) {
-                    // self -> Moodtag
-                    case 'self-affect':
-                        $mode = 'Moodtag';
+                    // Manual -> MoodTag
+                    case 'Manual':
+                        $mode = 'MoodTag';
                         break;
-                    // Moodtag -> 正式開始
-                    case 'Moodtag':
+                    // MoodTag -> 正式開始
+                    case 'MoodTag':
                         $practice = false;
                         $mode = 'neutral';
                         break;
-                    // 從一開始 -> self
+                    // 從一開始 -> Manual
                     default:
-                        $mode = 'self-affect';
+                        $mode = 'Manual';
                         break;
                 }
             }
@@ -62,7 +62,7 @@
                 }
             }
             $practiceValue = $practice ? 'true' : 'false';
-            $output .= 'php/chat.php?user_id='. $row['unique_id'] .'&mode=' . $mode .'&practice=' . $practiceValue .'';
+            $output .= 'chat.php?user_id='. $row['unique_id'] .'&mode=' . $mode .'&practice=' . $practiceValue .'';
         }
     }
     echo $output;
