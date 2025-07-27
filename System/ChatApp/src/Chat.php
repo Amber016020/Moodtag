@@ -9,7 +9,7 @@ class Chat implements MessageComponentInterface {
         $this->clients = new \SplObjectStorage;
 
         $hostname = "127.0.0.1";
-        $username = "root";
+        $username = "chatuser";
         $password = "";
         $dbname = "chatapp";
         $this->conn = mysqli_connect($hostname, $username, $password, $dbname);
