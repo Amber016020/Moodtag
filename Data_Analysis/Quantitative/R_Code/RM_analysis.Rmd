@@ -1,0 +1,1457 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+#install.packages("effectsize")
+#install.packages("ggpubr")
+#install.packages("multcompView")
+#install.packages("AICcmodavg")  # 只需執行一次
+```
+
+
+```{r}
+library(ggpubr)
+library(AICcmodavg)
+library(tibble)
+library(effectsize)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidyverse)
+library(car)
+library(psych)
+library(ggpubr)
+library(emmeans)
+library(multcomp)
+library(nlme)
+library(psych)
+library(tidyr)
+library(broom)
+library(lme4)
+library(sjPlot)
+library(dunn.test)
+library(multcompView)
+library(ez)
+library(emmeans)
+library(patchwork)
+library(ggpubr)
+```
+```{r}
+x <- c(22,27,22,22,24,24,20,20,28,19,18,19,19,19,
+       21,22,22,18,21,19,23,24,21,20,19,19,23,23)
+
+mean_x <- mean(x)           # 平均數
+sd_x <- sd(x)               # 樣本標準差（n-1）
+
+mean_x  # 約為 21.14
+sd_x    # 約為 2.54
+
+sex <- c(rep("Male", 6), rep("Female", 22))
+
+# 統計人數與百分比
+sex_table <- table(sex)
+sex_percent <- prop.table(sex_table) * 100
+
+# 整合成資料框，方便輸出或套進 LaTeX 表格
+sex_summary <- data.frame(
+  Sex = names(sex_table),
+  N = as.vector(sex_table),
+  Percent = round(as.vector(sex_percent), 2)
+)
+
+print(sex_summary)
+
+im_app <- c(rep("LINE", 18), rep("Instagram", 10))
+
+# 統計人數與百分比
+im_table <- table(im_app)
+im_percent <- prop.table(im_table) * 100
+
+# 整合成資料框
+im_summary <- data.frame(
+  App = names(im_table),
+  N = as.vector(im_table),
+  Percent = round(as.vector(im_percent), 2)
+)
+
+print(im_summary)
+```
+
+```{r}
+
+# 設定工作目錄
+setwd("./data/")
+
+# 統一排除的使用者 ID 開頭
+excluded_ids <- c("^6526", "^2555")
+
+# 模式名稱統一函數（適用於 condition 或 pattern）
+rename_conditions <- function(x) {
+  x <- as.character(x)
+  case_when(
+    x == "self-affect"     ~ "Manual",
+    x == "manual"          ~ "Manual",
+    x == "manual affect"   ~ "Manual",
+    x == "control"         ~ "Control",
+    x == "moodtag"         ~ "MoodTag",
+    x == "Moodtag"         ~ "MoodTag",
+    TRUE                   ~ x
+  )
+}
+# 模位名稱統一函數
+standardize_columns <- function(df) {
+  df <- df %>%
+    rename_with(~ str_replace_all(., c(
+      "userID"    = "user_id",
+      "unique_id" = "user_id",
+      "mode"      = "condition",
+      "pattern"   = "condition"
+    )))
+  return(df)
+}
+
+# 統一使用者 ID 過濾函數
+filter_ids <- function(df, id_col) {
+  df %>%
+    filter(!str_detect(!!sym(id_col), paste(excluded_ids, collapse = "|")))
+}
+
+# 讀取 self-report 並處理
+data <- read_csv("survey_finish.csv", locale = locale(encoding = "UTF-8")) %>%
+  standardize_columns() %>%
+  filter_ids("user_id") %>%
+  mutate(condition  = rename_conditions(condition))
+
+# 行為資料來源列表
+file_info <- list(
+  list(file = "messageSendToReciveTime.csv", metric = "Message Response Time"),
+  list(file = "messageWordCount.csv",        metric = "Word Count")
+)
+
+# 清理行為資料
+clean_behavioral_df <- function(df, metric_name) {
+  df %>%
+    standardize_columns() %>%
+    filter(condition != "neutral") %>%
+    filter_ids("user_id") %>%
+    mutate(
+      condition = rename_conditions(as.character(condition)),
+      metric = metric_name
+    )
+}
+
+# 批次讀取行為資料並處理
+df_list_cleaned <- map(file_info, ~{
+  raw_df <- read.csv(.x$file)
+  clean_behavioral_df(raw_df, .x$metric)
+})
+
+# 拆出清理後的資料框
+df_response_time <- df_list_cleaned[[1]]
+df_message_word  <- df_list_cleaned[[2]]
+
+# 讀取訊息資料
+messages_data <- read_csv("messagesSA.csv", locale = locale(encoding = "UTF-8")) %>%
+  standardize_columns() %>%
+  filter_ids("user_id") %>%
+  filter(condition != "neutral") %>%
+  mutate(
+    condition = rename_conditions(as.character(condition)),
+    time_deltas = as.numeric(time_deltas)
+  ) %>%
+  filter(time_deltas <= 700)
+
+print(data)
+print(df_response_time)
+print(df_message_word)
+print(messages_data)
+```
+
+
+
+
+
+```{r}
+# PANAS start
+# Step 1: 轉為長格式並計算每個子量表的總得分
+panas_data <- data %>%
+  filter(scaleName == "PANAS") %>%
+  mutate(across(c(neutral, pre, post), as.numeric)) %>%
+  pivot_longer(cols = c(neutral, pre, post), names_to = "time", values_to = "score") %>%
+  mutate(subscale = case_when(
+    question_number %in% c(1, 3, 5, 9, 10, 12, 14, 16, 17, 19) ~ "Positive",
+    question_number %in% c(2, 4, 6, 7, 8, 11, 13, 15, 18, 20) ~ "Negative"
+  )) %>%
+  group_by(user_id, userName, condition, time, subscale) %>%
+  summarize(total_score = sum(score, na.rm = TRUE), .groups = "drop")
+
+# Step 2: 轉為寬格式
+panas_data <- panas_data %>%
+  pivot_wider(names_from = c(time, subscale), values_from = total_score)
+# PANAS END
+
+# PAQ START
+# 定義每個子量表的問題號碼
+n_dif_questions <- c(2, 8, 14, 20)
+p_dif_questions <- c(5, 11, 17, 23)
+n_ddf_questions <- c(1, 7, 13, 19)
+p_ddf_questions <- c(4, 10, 16, 22)
+g_eot_questions <- c(3, 6, 9, 12, 15, 18, 21, 24)
+
+# 定義計算子量表得分的函數
+calculate_subscale_scores <- function(data, score_column) {
+  data %>%
+    mutate(subscale = case_when(
+      question_number %in% n_dif_questions ~ "N-DIF",
+      question_number %in% p_dif_questions ~ "P-DIF",
+      question_number %in% n_ddf_questions ~ "N-DDF",
+      question_number %in% p_ddf_questions ~ "P-DDF",
+      question_number %in% g_eot_questions ~ "G-EOT"
+    )) %>%
+    group_by(user_id, userName, condition) %>%
+    summarize(
+      N_DIF = sum(.data[[score_column]][subscale == "N-DIF"], na.rm = TRUE),
+      P_DIF = sum(.data[[score_column]][subscale == "P-DIF"], na.rm = TRUE),
+      N_DDF = sum(.data[[score_column]][subscale == "N-DDF"], na.rm = TRUE),
+      P_DDF = sum(.data[[score_column]][subscale == "P-DDF"], na.rm = TRUE),
+      G_EOT = sum(.data[[score_column]][subscale == "G-EOT"], na.rm = TRUE),
+      G_DAF = sum(.data[[score_column]][subscale %in% c("N-DIF", "P-DIF", "N-DDF", "P-DDF")], na.rm = TRUE),
+      N_DAF = sum(.data[[score_column]][subscale %in% c("N-DIF", "N-DDF")], na.rm = TRUE),
+      P_DAF = sum(.data[[score_column]][subscale %in% c("P-DIF", "P-DDF")], na.rm = TRUE),
+      G_DIF = sum(.data[[score_column]][subscale %in% c("N-DIF", "P-DIF")], na.rm = TRUE),
+      G_DDF = sum(.data[[score_column]][subscale %in% c("N-DDF", "P-DDF")], na.rm = TRUE),
+      Total_Score = sum(.data[[score_column]], na.rm = TRUE),  # 計算總分
+      .groups = 'drop'
+    )
+}
+
+# 計算基本子量表的得分
+post_paq_data <- data %>%
+  filter(scaleName == "PAQ") %>%
+  mutate(neutral = as.numeric(neutral)) %>%
+  calculate_subscale_scores("post")
+
+# 計算 neutral 的得分
+neutral_paq_data <- data %>%
+  filter(scaleName == "PAQ") %>%
+  mutate(neutral = as.numeric(neutral)) %>%
+  calculate_subscale_scores("neutral")
+
+# 合併 post_paq_data 和 neutral_paq_data
+paq_data <- post_paq_data %>%
+  left_join(neutral_paq_data, by = c("user_id", "userName", "condition"), suffix = c("_post", "_neutral")) %>%
+  rename_with(~ gsub("(.*)_(post|neutral)", "\\2_\\1", .))
+
+# PAQ END
+
+# TPA START
+distrust_questions <- c(1, 2, 3, 4, 5)
+trust_questions <- c(6, 7, 8, 9, 10, 11, 12)
+# TPA 數據轉換為長格式並計算信任/不信任總分
+tpa_data <- data %>%
+  filter(scaleName == "TPA") %>%
+  mutate(post = as.numeric(post)) %>%
+  pivot_longer(cols = post, names_to = "time", values_to = "score") %>%
+  mutate(subscale = case_when(
+    question_number %in% distrust_questions ~ "Distrust",
+    question_number %in% trust_questions ~ "Trust",
+    TRUE ~ NA_character_  # 處理不在範圍內的值
+  )) %>%
+  group_by(user_id,userName, subscale, time) %>%
+  summarise(total_score = sum(score, na.rm = TRUE), .groups = 'drop')
+
+# Step 2: 轉為寬格式
+tpa_data <- tpa_data %>%
+  pivot_wider(names_from = subscale, values_from = total_score)
+# TPA END
+
+# ABCCT START
+abcct_data <- data %>%
+  filter(scaleName == "ABCCT") %>%
+  pivot_longer(cols = c(neutral, post), names_to = "communication_tool", values_to = "score") %>%
+  mutate(condition = ifelse(communication_tool == "neutral", "common", "MoodTag")) %>%
+  mutate(subscale = case_when(
+    question_number %in% c(1, 2, 3) ~ "Emotion_Express",
+    question_number %in% c(4, 5, 6) ~ "Engagement_Play",
+    question_number %in% c(7, 8, 9) ~ "Presence_in_Absence",
+    question_number %in% c(10, 11, 12, 13, 14) ~ "Social_Support",
+    question_number %in% c(15, 16, 17, 18) ~ "Obligations",
+    question_number %in% c(19, 20, 21, 22) ~ "Unmet_Expectations",
+    question_number %in% c(23, 24, 25, 26) ~ "Threat_to_Privacy"
+  )) %>%
+  group_by(user_id, userName, condition, subscale) %>%
+  summarize(avg_score = mean(score, na.rm = TRUE), .groups = "drop")
+
+abcct_data <- abcct_data %>%
+  pivot_wider(names_from = c(subscale), values_from = avg_score) %>%
+  rename(tool = condition) %>%
+  mutate(
+    abcct_positive_total = rowSums(across(c(Emotion_Express, Engagement_Play, 
+                                      Presence_in_Absence, Social_Support), 
+                                    ~ ifelse(is.na(.), 0, .))),
+    abcct_negative_total = rowSums(across(c(Obligations, Unmet_Expectations, 
+                                      Threat_to_Privacy), 
+                                    ~ ifelse(is.na(.), 0, .)))
+  )
+
+# ABCCT END
+print(panas_data)
+print(paq_data)
+print(tpa_data)
+print(abcct_data)
+```
+```{r}
+# 計算 PAQ 平均與標準差
+paq_summary <- paq_data %>%
+  summarize(
+    neutral_mean = mean(neutral_Total_Score, na.rm = TRUE),
+    neutral_sd = sd(neutral_Total_Score, na.rm = TRUE),
+    post_mean = mean(post_Total_Score, na.rm = TRUE),
+    post_sd = sd(post_Total_Score, na.rm = TRUE)
+  )
+
+print(paq_summary)
+```
+
+
+
+```{r}
+neutral_paq_data_test <- data %>%
+  filter(scaleName == "PAQ" & condition == "Control") %>%
+  mutate(neutral = as.numeric(neutral))
+  
+print(neutral_paq_data_test)
+paq_wide_test <- neutral_paq_data_test %>%
+  dplyr::select(user_id, question_number, neutral) %>%
+  pivot_wider(
+    names_from = question_number,
+    names_prefix = "Q",
+    values_from = neutral
+  ) 
+
+print(paq_wide_test)
+
+# Step 2: 移除有 NA 的 row（如果你要完整回答者才能算 alpha）
+paq_clean <- paq_wide_test %>% drop_na()
+
+# Step 3: 計算 Cronbach’s alpha（用 psych 套件）
+alpha_result <- psych::alpha(paq_clean %>% dplyr::select(starts_with("Q")))
+
+# Step 4: 印出 alpha 值
+print(alpha_result$total$raw_alpha)
+
+# Step 1: 題號分組
+gdif_items <- paste0("Q", c(2, 5, 8, 11, 14, 17, 20, 23))
+gddf_items <- paste0("Q", c(1, 4, 7, 10, 13, 16, 19, 22))
+geot_items <- paste0("Q", c(3, 6, 9, 12, 15, 18, 21, 24))
+
+# Step 2: 分別計算 alpha
+alpha_gdif <- psych::alpha(paq_clean %>% dplyr::select(all_of(gdif_items)))
+alpha_gddf <- psych::alpha(paq_clean %>% dplyr::select(all_of(gddf_items)))
+alpha_geot <- psych::alpha(paq_clean %>% dplyr::select(all_of(geot_items)))
+
+# Step 3: 印出 alpha 值
+cat("G-DIF Cronbach’s alpha: ", round(alpha_gdif$total$raw_alpha, 3), "\n")
+cat("G-DDF Cronbach’s alpha: ", round(alpha_gddf$total$raw_alpha, 3), "\n")
+cat("G-EOT Cronbach’s alpha: ", round(alpha_geot$total$raw_alpha, 3), "\n")
+```
+
+```{r}
+# ✅ 封裝：畫 QQ 圖 + 保存 + Shapiro-Wilk 檢定
+plot_and_shapiro <- function(data, column, label, file_path = NULL) {
+  values <- data[[column]]
+
+  # 畫 QQ plot 並 optionally 存檔
+  if (!is.null(file_path)) {
+    png(file_path, width = 10, height = 8, units = "in", res = 300)
+    qqnorm(values, main = paste("QQ Plot for", label))
+    qqline(values, col = "green")
+    dev.off()
+  } else {
+    qqnorm(values, main = paste("QQ Plot for", label))
+    qqline(values, col = "green")
+  }
+
+  # 印出常態性檢定結果
+  cat("Shapiro-Wilk test for", label, "\n")
+  print(shapiro.test(values))
+  cat("\n-------------------------------\n")
+}
+
+panas_vars <- c("neutral_Negative", "neutral_Positive",
+                "post_Negative", "post_Positive",
+                "pre_Negative", "pre_Positive")
+
+walk(panas_vars, ~plot_and_shapiro(panas_data, .x, paste("PANAS -", .x)))
+
+plot_and_shapiro(panas_data, "neutral_Negative", "PANAS Neutral Negative",
+                 "D:/Research/part/圖表/QQ_Plot_for_PANAS_Data.png")
+
+plot_and_shapiro(paq_data, "neutral_Total_Score", "PAQ Neutral",
+                 "D:/Research/part/圖表/QQ_Plot_for_PAQ_Data.png")
+
+plot_and_shapiro(tpa_data, "Distrust", "TPA Distrust",
+                 "D:/Research/part/圖表/QQ_Plot_for_TPA_Distrust_Data.png")
+
+plot_and_shapiro(tpa_data, "Trust", "TPA Trust",
+                 "D:/Research/part/圖表/QQ_Plot_for_TPA_Trust_Data.png")
+
+plot_and_shapiro(abcct_data, "abcct_positive_total", "ABCCT Positive",
+                 "D:/Research/part/圖表/QQ_Plot_for_ABCCT_positive_Data.png")
+
+plot_and_shapiro(abcct_data, "abcct_negative_total", "ABCCT Negative",
+                 "D:/Research/part/圖表/QQ_Plot_for_ABCCT_negative_Data.png")
+
+```
+
+```{r}
+# === 共用函式 ===
+
+compute_partial_eta2 <- function(anova_table, effect_name = "condition") {
+  ss_effect <- anova_table$SSn[anova_table$Effect == effect_name]
+  ss_error  <- anova_table$SSd[anova_table$Effect == effect_name]
+  ss_effect / (ss_effect + ss_error)
+}
+
+make_sig_labels <- function(posthoc_df, max_y) {
+  as.data.frame(posthoc_df$p.value) %>%
+    rownames_to_column("group1") %>%
+    pivot_longer(-group1, names_to = "group2", values_to = "p_value") %>%
+    filter(!is.na(p_value)) %>%
+    mutate(
+      significance = case_when(
+        p_value < 0.001 ~ "***",
+        p_value < 0.01 ~ "**",
+        p_value < 0.05 ~ "*",
+        TRUE ~ "ns"
+      ),
+      y.position = max_y * (1.1 + 0.1 * (row_number() - 1))
+    )
+}
+
+report_anova_latex <- function(ez_result, long_df, dv_col = "difference_in_seconds") {
+  anova_table <- ez_result$ANOVA
+  mauchly_test <- ez_result$`Mauchly's Test for Sphericity`
+  sphericity_correction <- ez_result$`Sphericity Corrections`
+  n_levels <- nlevels(long_df$condition)
+  print(ez_result)
+  print("sphericity_correction = ")
+  print(sphericity_correction)
+  fmt_p <- function(p) {
+    if (is.na(p)) return("NA")
+    if (p < .001) return("< .001$^{***}$")
+    if (p < .01) return(sprintf("%.3f$^{**}$", p))
+    if (p < .05) return(sprintf("%.3f$^{*}$", p))
+    return(sprintf("%.3f", p))
+  }
+
+  # === 平均與標準差 ===
+  summary_values <- long_df %>%
+    group_by(condition) %>%
+    summarise(
+      Mean = round(mean(.data[[dv_col]], na.rm = TRUE), 2),
+      SD = round(sd(.data[[dv_col]], na.rm = TRUE), 2)
+    )
+
+  stats_str <- summary_values %>%
+    mutate(
+      formatted = paste0(condition, " (M = ", Mean, ", SD = ", SD, ")")
+    ) %>%
+    pull(formatted) %>%
+    paste(collapse = ", ")
+
+  cat(stats_str, "\n\n")
+
+  # === ANOVA ===
+  if (n_levels <= 2) {
+    df1 <- anova_table$DFn[anova_table$Effect == "condition"]
+    df2 <- anova_table$DFd[anova_table$Effect == "condition"]
+    f_value <- round(anova_table$F[anova_table$Effect == "condition"], 2)
+    p_value <- anova_table$p[anova_table$Effect == "condition"]
+    p_formatted <- ifelse(p_value < .001, "< .001", sprintf("= %.3f", p_value))
+    eta2 <- round(compute_partial_eta2(anova_table), 2)
+  
+    cat(sprintf("ANOVA: $F(%d, %d) = %.2f$, $p %s$, $\\eta_p^2 = %.2f$\n\n",
+                df1, df2, f_value, p_formatted, eta2))
+  } else {
+    W <- round(mauchly_test$W[1], 3)
+    p_mauchly <- mauchly_test$p[1]
+    p_mauchly_fmt <- ifelse(p_mauchly < .001, "< .001", sprintf("= %.3f", p_mauchly))
+  
+    cat(sprintf("Mauchly's Test: $W = %.3f$, $p %s$\n", W, p_mauchly_fmt))
+  
+    df1_raw <- anova_table$DFn[anova_table$Effect == "condition"]
+    df2_raw <- anova_table$DFd[anova_table$Effect == "condition"]
+    f_value <- round(anova_table$F[anova_table$Effect == "condition"], 2)
+    eta2 <- round(compute_partial_eta2(anova_table), 2)
+  
+    if (p_mauchly < .05) {
+      GG_e <- round(sphericity_correction$GGe[1], 3)
+      df1 <- round(df1_raw * GG_e, 2)
+      df2 <- round(df2_raw * GG_e, 2)
+      p_value <- sphericity_correction$`p[GG]`[1]
+      p_fmt <- ifelse(p_value < .001, "< .001", sprintf("= %.3f", p_value))
+  
+      cat(sprintf("Greenhouse-Geisser corrected: $F(%.2f, %.2f) = %.2f$, $p %s$, $\\varepsilon = %.3f$, $\\eta_p^2 = %.2f$\n\n",
+                  df1, df2, f_value, p_fmt, GG_e, eta2))
+    } else {
+      p_value <- anova_table$p[anova_table$Effect == "condition"]
+      p_formatted <- ifelse(p_value < .001, "< .001", sprintf("= %.3f", p_value))
+  
+      cat(sprintf("ANOVA: $F(%d, %d) = %.2f$, $p %s$, $\\eta_p^2 = %.2f$\n\n",
+                  df1_raw, df2_raw, f_value, p_formatted, eta2))
+    }
+  }
+  
+  # === wide format for t-tests ===
+  wide_df <- long_df %>%
+    pivot_wider(names_from = condition, values_from = !!sym(dv_col)) %>%
+    drop_na()
+
+  # === Pairwise t-tests 原始與 Bonferroni 調整後 ===
+  pairwise_raw <- pairwise.t.test(
+    long_df[[dv_col]],
+    long_df$condition,
+    paired = TRUE,
+    p.adjust.method = "none"
+  )
+
+  pairwise_adj <- pairwise.t.test(
+    long_df[[dv_col]],
+    long_df$condition,
+    paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+  comparisons <- list(
+    c("Manual", "Control"),
+    c("MoodTag", "Control"),
+    c("MoodTag", "Manual")
+  )
+
+  cat("\\textbf{Comparison} & \\textbf{$t$} & \\textbf{$p$ (raw)} & \\textbf{$p$ (adj)} \\\\\n")
+  cat("\\hline\n")
+
+  for (comp in comparisons) {
+    g1 <- comp[1]; g2 <- comp[2]
+    values1 <- wide_df[[g1]]
+    values2 <- wide_df[[g2]]
+    ttest <- t.test(values1, values2, paired = TRUE)
+
+    raw_p <- pairwise_raw$p.value[g1, g2]
+    adj_p <- pairwise_adj$p.value[g1, g2]
+
+    cat(sprintf("%s - %s & %.3f & %s & %s \\\\\n",
+                g1, g2,
+                round(ttest$statistic, 2),
+                fmt_p(raw_p),
+                fmt_p(adj_p)))
+  }
+}
+
+```
+
+```{r}
+# Wide to long
+df_response_time_wide <- df_response_time %>%
+  pivot_wider(names_from = condition, values_from = difference_in_seconds) %>%
+  drop_na()
+
+df_response_time_long <- df_response_time_wide %>%
+  pivot_longer(cols = c("Control", "Manual", "MoodTag"), names_to = "condition", values_to = "difference_in_seconds") %>%
+  mutate(condition = factor(condition, levels = c("Control", "Manual", "MoodTag")))
+
+print(df_response_time_long)
+
+# 直接使用 ezANOVA
+anova_rt <- ezANOVA(
+  data = df_response_time_long,
+  dv = difference_in_seconds,
+  wid = user_id,
+  within = condition,
+  detailed = TRUE
+)
+
+print(anova_rt$ANOVA)
+
+report_anova_latex(anova_rt, df_response_time_long)
+
+# Bonferroni + 繪圖
+posthoc_rt <- pairwise.t.test(df_response_time_long$difference_in_seconds, df_response_time_long$condition, paired = TRUE, p.adjust.method = "bonferroni")
+sig_labels_rt <- make_sig_labels(posthoc_rt, max(df_response_time_long$difference_in_seconds))
+
+plot_rt <- ggplot(df_response_time_long, aes(x = condition, y = difference_in_seconds)) +
+  stat_summary(aes(fill = condition), fun = mean, geom = "bar", width = 0.5, color = "black", position = position_dodge(0.8)) +
+  stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", 
+               width = 0.2, position = position_dodge(0.8)) +
+  stat_pvalue_manual(
+    sig_labels_rt,
+    xmin = "group1",
+    xmax = "group2",
+    label = "significance",
+    y.position = c(90, 100, 110),  # 依實際數值調整
+    tip.length = 0.01
+  ) +
+  scale_fill_manual(values = c("Control" = "#4c72b0", "Manual" = "#55a868", "MoodTag" = "#c44e52")) +
+  labs(y = "Time (s)") +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title = element_text(face = "bold", size = 14),
+    axis.text = element_text(color = "black", size = 14),
+    axis.line = element_line(color = "black", size = 1.2),
+    axis.ticks = element_line(size = 1.2),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "none"
+  ) +
+  scale_y_continuous(
+    breaks = c(0, 30, 60, 90),
+    limits = c(0, 120)
+  )
+
+print(plot_rt)
+ggsave("figures/response_by_Condition_RM_ANOVA.pdf", plot = plot_rt, width = 4, height = 5)
+
+```
+
+
+```{r}
+print(df_message_word)
+
+df_message_word <- df_message_word %>%
+  mutate(condition = factor(condition, levels = c("Control", "Manual", "MoodTag")))
+
+# ✅ Step 1: ezANOVA（RM ANOVA + 球型檢定）
+anova_word <- ezANOVA(
+  data = df_message_word,
+  dv = messagesCount,
+  wid = user_id,
+  within = condition,
+  detailed = TRUE
+)
+
+# 3. 輸出 ANOVA 詳細結果（LaTeX 友善格式）
+report_anova_latex(anova_word, df_message_word, dv_col = "messagesCount")
+
+# posthoc 檢定與繪圖
+posthoc <- pairwise.t.test(df_message_word$messagesCount, df_message_word$condition, paired = TRUE, p.adjust.method = "bonferroni")
+sig_labels <- make_sig_labels(posthoc, max(df_message_word$messagesCount, na.rm = TRUE))
+
+
+plot_word_only <- ggplot(df_message_word, aes(x = condition, y = messagesCount)) +
+  stat_summary(aes(fill = condition), fun = mean, geom = "bar", width = 0.5, color = "black", position = position_dodge(0.8)) +
+  stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", 
+               width = 0.2, position = position_dodge(0.8)) +
+  stat_pvalue_manual(
+    sig_labels,
+    xmin = "group1",
+    xmax = "group2",
+    label = "significance",
+    y.position = c(1500, 1700, 1900),
+    tip.length = 0.01
+  ) +
+  scale_fill_manual(values = c("Control" = "#4c72b0", "Manual" = "#55a868", "MoodTag" = "#c44e52")) +
+  labs(#x = "(B) Message length",
+       y = "Words") +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),      # 不顯示 x 軸標題
+    axis.title = element_text(face = "bold", size = 14),
+    axis.text = element_text(color = "black", size = 14),
+    axis.line = element_line(color = "black", size = 1.2),
+    axis.ticks = element_line(size = 1.2),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "none"
+  )+ scale_y_continuous(
+    breaks = c(0, 500, 1000, 1500),  # 顯示 3 個刻度
+    limits = c(0, 1900)         # 固定範圍，避免自動調整
+  )
+
+# ✅ 顯示與輸出
+print(plot_word_only)
+pdf("figures/Word_Count_by_Condition_RM_ANOVA.pdf", width = 4, height = 5)
+print(plot_word_only)
+dev.off()
+```
+
+```{r}
+# === 資料預處理 ===
+panas_diff_neutral <- panas_data %>%
+  mutate(
+    pos_diff = post_Positive - neutral_Positive,
+    neg_diff = post_Negative - neutral_Negative
+  )
+
+panas_diff_pre <- panas_data %>%
+  mutate(
+    pos_diff = post_Positive - pre_Positive,
+    neg_diff = post_Negative - pre_Negative
+  )
+
+# === 整合進 list ===
+panas_sets <- list(
+  "Positive_Post_Neutral" = list(data = panas_diff_neutral, col = "pos_diff"),
+  "Negative_Post_Neutral" = list(data = panas_diff_neutral, col = "neg_diff"),
+  "Positive_Post_Pre"     = list(data = panas_diff_pre,     col = "pos_diff"),
+  "Negative_Post_Pre"     = list(data = panas_diff_pre,     col = "neg_diff")
+)
+
+# === 固定色盤 ===
+fill_colors <- c("MoodTag" = "#c44e52", "Control" = "#4c72b0", "Manual" = "#55a868")
+
+# === 建圖與報表 ===
+dir.create("figures", showWarnings = FALSE)
+
+for (key in names(panas_sets)) {
+  
+  this_data <- panas_sets[[key]]$data
+  dv_col <- panas_sets[[key]]$col
+
+  this_data <- this_data %>%
+    dplyr::select(user_id, condition, dv_col) %>%  # 直接選擇所需列
+    rename(difference = !!dv_col) %>%  # 重命名為 'difference'
+    mutate(condition = factor(condition, levels = c("Control", "Manual", "MoodTag")))
+
+  # ezANOVA
+  ez <- ezANOVA(
+    data = this_data,
+    dv = difference,
+    wid = user_id,
+    within = condition,
+    detailed = TRUE
+  )
+
+  # LaTeX ANOVA + pairwise 輸出
+  cat("\n\n===== ", key, " =====\n")
+  
+  print(ez)
+  report_anova_latex(ez, this_data, dv_col = "difference")
+
+  # posthoc 檢定與繪圖
+  posthoc <- pairwise.t.test(this_data$difference, this_data$condition, paired = TRUE, p.adjust.method = "bonferroni")
+  sig_labels <- make_sig_labels(posthoc, max(this_data$difference, na.rm = TRUE))
+  
+  # 動態產生 y 軸標籤
+  if (grepl("^Positive", key)) {
+    direction <- "Positive"
+  } else if (grepl("^Negative", key)) {
+    direction <- "Negative"
+  } else {
+    direction <- "Score"
+  }
+  
+  if (grepl("Post_Pre", key)) {
+    comparison <- "Post - Pre"
+  } else if (grepl("Post_Neutral", key)) {
+    comparison <- "Post - Baseline"
+  } else {
+    comparison <- "Score Difference"
+  }
+  
+  y_label <- paste("Change in ", direction, "Affect score", sep = " ")
+  
+  plot <- ggplot(this_data, aes(x = condition, y = difference)) +
+  stat_summary(aes(fill = condition), fun = mean, geom = "bar", width = 0.5, color = "black", position = position_dodge(0.8)) +
+  stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", 
+               width = 0.2, position = position_dodge(0.8)) +
+    stat_pvalue_manual(
+      sig_labels,
+      xmin = "group1",
+      xmax = "group2",
+      label = "significance",
+      tip.length = 0.01,
+      y.position = c(10, 12, 14)
+    ) +
+    scale_fill_manual(values = fill_colors) +
+    labs(
+      y = y_label,
+      x = NULL
+    ) +
+    theme_minimal() +
+    theme(
+      axis.title = element_blank(),
+      axis.text = element_text(color = "black", size = 14),
+      axis.line = element_line(color = "black", size = 1),
+      axis.ticks = element_line(size = 1),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.title.y = element_text(face = "bold", size = 14),
+      axis.text.y = element_text(color = "black",size = 12),
+      legend.position = "none"
+    )
+
+  print(plot)
+  ggsave(filename = paste0("figures/PANAS_", key, ".pdf"), plot = plot, width = 5, height = 5)
+}
+
+
+```
+
+```{r}
+# 計算 post - neutral 差異
+paq_data_diff <- paq_data %>%
+  group_by(user_id, userName, condition) %>%
+  summarise(
+    N_DIF_diff = neutral_N_DIF - post_N_DIF,
+    P_DIF_diff = neutral_P_DIF - post_P_DIF,
+    N_DDF_diff = neutral_N_DDF - post_N_DDF,
+    P_DDF_diff = neutral_P_DDF - post_P_DDF,
+    G_EOT_diff = neutral_G_EOT - post_G_EOT,
+    G_DAF_diff = neutral_G_DAF - post_G_DAF,
+    N_DAF_diff = neutral_N_DAF - post_N_DAF,
+    P_DAF_diff = neutral_P_DAF - post_P_DAF,
+    G_DIF_diff = neutral_G_DIF - post_G_DIF,
+    G_DDF_diff = neutral_G_DDF - post_G_DDF,
+    Total_Score_diff = neutral_Total_Score - post_Total_Score,
+    neutral_Total_Score = first(neutral_Total_Score),
+    neutral_N_DIF = first(neutral_N_DIF),
+    neutral_P_DIF = first(neutral_P_DIF),
+    neutral_N_DDF = first(neutral_N_DDF),
+    neutral_P_DDF = first(neutral_P_DDF),
+    neutral_G_EOT = first(neutral_G_EOT),
+    neutral_G_DAF = first(neutral_G_DAF),
+    neutral_N_DAF = first(neutral_N_DAF),
+    neutral_P_DAF = first(neutral_P_DAF),
+    neutral_G_DIF = first(neutral_G_DIF),
+    neutral_G_DDF = first(neutral_G_DDF),
+  ) 
+  
+paq_data_diff$condition <- factor(
+  paq_data_diff$condition,
+  levels = c("Control", "Manual", "MoodTag")  # 指定固定的順序
+)
+
+analyze_paq_aov_verbose <- function(data) {
+  variables <- c("G_DIF_diff","G_DDF_diff","G_EOT_diff","Total_Score_diff"
+                 #"N_DIF_diff","P_DIF_diff","N_DDF_diff","P_DDF_diff","G_EOT_diff",
+                 #"G_DAF_diff","N_DAF_diff","P_DAF_diff","G_DIF_diff",
+                 #"G_DDF_diff","Total_Score_diff"
+                 )  # 可擴充
+  
+  all_results <- list()
+  
+  for (var in variables) {
+    # 1. 整理資料
+    this_data <- data %>%
+      filter(!is.na(.data[[var]])) %>%
+      dplyr::select(user_id, condition, difference = !!sym(var)) %>%
+      mutate(
+        condition = factor(condition, levels = c("Control", "Manual", "MoodTag")),
+        user_id = factor(user_id)
+      )
+    
+    print(this_data)
+    
+    # 2. ezANOVA
+    ez <- ezANOVA(
+      data = this_data,
+      dv = difference,
+      wid = user_id,
+      within = condition,
+      detailed = TRUE
+    )
+
+    # 3. 輸出 ANOVA 詳細結果（LaTeX 友善格式）
+    report_anova_latex(ez, this_data, dv_col = "difference")
+
+    # posthoc 檢定與繪圖
+    posthoc <- pairwise.t.test(this_data$difference, this_data$condition, paired = TRUE, p.adjust.method = "bonferroni")
+    sig_labels <- make_sig_labels(posthoc, max(this_data$difference, na.rm = TRUE))
+    
+    cat("📊 畫圖中：", var, "\n")
+    
+    clean_var <- gsub("_diff", "", var)
+    clean_var <- gsub("_", "-", clean_var)
+  
+  # 畫圖
+  paq_plot <- ggplot(this_data, aes(x = condition, y = difference)) +
+  stat_summary(aes(fill = condition), fun = mean, geom = "bar", width = 0.5, color = "black", position = position_dodge(0.8)) +
+  stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", 
+               width = 0.2, position = position_dodge(0.8)) +
+    stat_pvalue_manual(
+      sig_labels,
+      xmin = "group1",
+      xmax = "group2",
+      label = "significance",
+      tip.length = 0.01,
+      y.position = c(19,21,23)
+    ) +
+    labs(
+      y = paste("Change in", clean_var, " Score")
+    ) +
+    theme_minimal() +
+    theme(
+      #axis.title.x = element_text(face = "bold", size = 14),
+      axis.title.x = element_blank(),      # 不顯示 x 軸標題
+      axis.title.y = element_text(face = "bold", size = 14),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.line = element_line(color = "black", size = 0.8),
+      axis.text.x = element_text(color = "black",angle = 0, hjust = 0.5, size = 14),
+      axis.text.y = element_text(color = "black",size = 12),
+      axis.ticks = element_line(color = "black", size = 1),
+      axis.ticks.length = unit(5, "pt"),
+      legend.position = "none"
+    ) +
+    scale_fill_manual(
+      name = "Condition",
+      values = c("MoodTag" = "#c44e52", "Control" = "#4c72b0", "Manual" = "#55a868")
+    )+ 
+    scale_y_continuous(
+      limits = c(-5, 25),           # ❗設定固定範圍（上下限）
+      breaks = seq(-5, 20, by = 5)  # 可選，設定刻度間距
+    )
+
+  # 顯示圖表
+  print(paq_plot)
+
+  # 儲存 PDF
+  pdf_filename <- paste0("figures/paq_", var, "_Significant.pdf")
+  pdf(pdf_filename, width = 4, height = 5)
+  print(paq_plot)
+  dev.off()
+    
+  }
+}
+
+# 呼叫分析
+paq_aov_results <- analyze_paq_aov_verbose(paq_data_diff)
+
+```
+
+```{r}
+# 定義子量表名稱
+subscales <- c("Emotion_Express", "Engagement_Play", "Presence_in_Absence", 
+               "Social_Support", "Obligations", "Unmet_Expectations", "Threat_to_Privacy")
+
+abcct_data$tool <- factor(
+  abcct_data$tool,
+  levels = c("common", "MoodTag")  # 指定固定的順序
+)
+
+# 查看數據結構
+print(abcct_data)
+
+
+# 將資料轉為長格式（共用）
+abcct_long <- abcct_data %>%
+  pivot_longer(
+    cols = all_of(subscales),
+    names_to = "subscale",
+    values_to = "score"
+  ) %>%
+  filter(!is.na(score))
+
+# 顯著性結果存放區
+abcct_sig_results <- list()
+
+# 計算每個子量表的 RM ANOVA
+for (sub in subscales) {
+  sub_data <- abcct_data %>%
+    dplyr::select(user_id, tool, all_of(sub)) %>%
+    pivot_wider(names_from = tool, values_from = all_of(sub)) %>%
+    drop_na()
+
+  if (nrow(sub_data) >= 2) {
+    long_data <- sub_data %>%
+      pivot_longer(cols = c("MoodTag", "common"), names_to = "tool", values_to = "score") %>%
+      mutate(tool = factor(tool, levels = c("common", "MoodTag")),
+             user_id = as.factor(user_id))
+
+    conditionl <- tryCatch({
+      aov(score ~ tool + Error(user_id/tool), data = long_data)
+    }, error = function(e) NULL)
+
+    if (!is.null(conditionl)) {
+      anova_summary <- summary(conditionl)
+      p_val <- tryCatch({
+        as.numeric(anova_summary[[2]][[1]]["tool", "Pr(>F)"])
+      }, error = function(e) NA)
+
+      if (!is.na(p_val)) {
+        posthoc <- pairwise.t.test(long_data$score, long_data$tool, paired = TRUE, p.adjust.method = "bonferroni")
+        # 將 wide 格式資料中的兩列拿出來
+        common_scores <- sub_data$common
+        moodtag_scores <- sub_data$MoodTag
+        t_result <- t.test(common_scores, moodtag_scores, paired = TRUE)
+
+        print(t_result)
+        
+        p_value <- as.numeric(posthoc$p.value[1, 1])
+
+        sig_label <- ifelse(p_value < 0.05, "*", "ns")
+
+        abcct_sig_results[[sub]] <- data.frame(
+          subscale = sub,
+          group1 = "common",
+          group2 = "MoodTag",
+          p_value = p_value,
+          significance = sig_label,
+          y.position = max(long_data$score, na.rm = TRUE) + 0.1 * max(long_data$score, na.rm = TRUE)
+        )
+      }
+    }
+  }
+}
+
+print(abcct_sig_results)
+
+# 合併所有顯著性結果
+sig_df <- do.call(rbind, abcct_sig_results)
+
+print(sig_df)
+
+# 分組資訊
+abcct_long <- abcct_long %>%
+  mutate(
+    group = case_when(
+      subscale %in% c("Emotion_Express", "Engagement_Play", "Presence_in_Absence", "Social_Support") ~ "(A) Benefits Subscales",
+      subscale %in% c("Obligations", "Unmet_Expectations", "Threat_to_Privacy") ~ "(B) Cost Subscales"
+    )
+  )
+
+# 分組資訊
+sig_df <- sig_df %>%
+  mutate(
+    group = case_when(
+      subscale %in% c("Emotion_Express", "Engagement_Play", "Presence_in_Absence", "Social_Support") ~ "(A) Benefits Subscales",
+      subscale %in% c("Obligations", "Unmet_Expectations", "Threat_to_Privacy") ~ "(B) Cost Subscales"
+    )
+  )
+# 定義 mean ± SD 的函數
+mean_sd <- function(x) {
+  m <- mean(x)
+  sd_val <- sd(x)
+  return(data.frame(y = m, ymin = m - sd_val, ymax = m + sd_val))
+}
+
+
+```
+
+
+```{r}
+plot_group <- function(data, sigdf) {
+  ggplot(data, aes(x = subscale, y = score, group = tool)) +
+    stat_summary(
+      aes(fill = tool),
+      fun = mean,
+      geom = "bar",
+      position = position_dodge(0.8),
+      width = 0.7,
+      color = "black"
+    ) +
+    stat_summary(
+      fun.data = mean_sd,
+      geom = "errorbar",
+      position = position_dodge(0.8),
+      width = 0.2
+    ) +
+    stat_pvalue_manual(
+      data = sigdf,
+      xmin = "xmin",
+      xmax = "xmax",
+      y.position = "y.position",
+      label = "significance",
+      tip.length = 0.01
+    ) +
+    labs(y = "Score", fill = "Tool") +
+    scale_fill_manual(
+      values = c("MoodTag" = "#c44e52", "common" = "#4c72b0"),
+      labels = c("MoodTag" = "MoodTag", "common" = "Common Tool")
+    ) +
+    coord_cartesian(ylim = c(0, 6)) +
+    scale_y_continuous(breaks = seq(0, 5, by = 1))+
+    scale_x_discrete(labels = function(x) {
+      x <- gsub("_", " ", x)
+      x <- ifelse(x == "Engagement Play", "Engagement and Playfulness", x)
+      return(x)
+    }) +
+    theme_minimal() +
+    theme(
+      axis.title.x = element_blank(),      # 不顯示 x 軸標題
+      axis.title.y = element_text(face = "bold",size = 12),
+      axis.text = element_text(size = 10),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.line = element_line(color = "black", size = 0.8),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      axis.ticks = element_line(color = "black", size = 1),
+      axis.ticks.length = unit(5, "pt"),
+      strip.text = element_text(size = 12, face = "bold")
+    )
+}
+
+# 假設這裡的 subscales 依序是
+adv_subscales <- c("Emotion_Express", "Engagement_Play", "Presence_in_Absence", "Social_Support")
+dis_subscales <- c("Obligations", "Threat_to_Privacy", "Unmet_Expectations")
+
+adv_data <- abcct_long %>% filter(group == "(A) Benefits Subscales")
+adv_sig <- sig_df %>% filter(group == "(A) Benefits Subscales")
+disadv_data <- abcct_long %>% filter(group == "(B) Cost Subscales")
+disadv_sig <- sig_df %>% filter(group == "(B) Cost Subscales")
+
+
+adv_sig <- adv_sig %>%
+  mutate(
+    subscale = factor(subscale, levels = adv_subscales),
+    subscale_num = as.numeric(subscale),
+    xmin = subscale_num - 0.2,
+    xmax = subscale_num + 0.2
+  )
+
+print(disadv_sig)
+disadv_sig <- disadv_sig %>%
+  mutate(
+    subscale = factor(subscale, levels = dis_subscales),
+    subscale_num = as.numeric(subscale),
+    xmin = subscale_num - 0.2,
+    xmax = subscale_num + 0.2,
+    y.position = 4  # ✅ 統一顯著標記的 y 軸高度
+  )
+
+p1 <- plot_group(adv_data, adv_sig)
+p2 <- plot_group(disadv_data, disadv_sig)
+
+final_plot <- p1 + p2 +
+  plot_layout(nrow = 1, widths = c(4, 3), guides = "collect") &
+  theme(legend.position = "right")  # 讓合併後的單一圖例放左側
+
+print(final_plot)
+ggsave("figures/ABCCT_adv_dis_.pdf", final_plot, width = 8, height = 5)
+
+# 去除 p1 的圖例
+p1_no_legend <- p1 + theme(legend.position = "none")
+
+
+# 儲存子圖：依照 bar 數量調整比例（p1: 4 bar → 寬 4；p2: 3 bar → 寬 3）
+ggsave("figures/ABCCT_adv.pdf", p1_no_legend, width = 5, height = 5)
+ggsave("figures/ABCCT_dis.pdf", p2, width = 5, height = 5)
+
+library(grid)
+library(patchwork)
+
+# 建立子圖下方的標題（使用 grid.text）
+caption1 <- wrap_elements(full = grid::textGrob("(a) Benefits Subscales", gp = gpar(fontsize = 14)))
+caption2 <- wrap_elements(full = grid::textGrob("(b) Costs Subscales                       ", gp = gpar(fontsize = 14)))
+
+# 組合圖 + 標題
+final_plot <- (p1 + p2) /
+              (caption1 + caption2) +
+              plot_layout(heights = c(10, 1), widths = c(4, 3), guides = "collect") &
+              theme(legend.position = "right")
+
+# 顯示圖
+print(final_plot)
+
+# 儲存圖
+ggsave("figures/ABCCT_adv_dis_.pdf", final_plot, width = 8, height = 6)
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+# 建立一個 function 來印出 M 跟 SD
+print_summary_stats <- function(data, group_name) {
+  cat("\n=== Summary for", group_name, "===\n")
+  summary_table <- data %>%
+    group_by(subscale, tool) %>%
+    summarise(
+      Mean = round(mean(score, na.rm = TRUE), 2),
+      SD = round(sd(score, na.rm = TRUE), 2),
+      .groups = "drop"
+    )
+  print(summary_table)
+}
+
+# 印出 Benefits 子量表的統計摘要
+print_summary_stats(adv_data, "Benefits Subscales")
+
+# 印出 Cost 子量表的統計摘要
+print_summary_stats(disadv_data, "Cost Subscales")
+
+
+abcct_sig_results <- list()
+
+subscales <- c("Emotion_Express", "Engagement_Play", "Presence_in_Absence", "Social_Support","Obligations", "Threat_to_Privacy", "Unmet_Expectations"
+               )
+
+for (sub in subscales) {
+  # 1. 整理資料
+  sub_data <- abcct_data %>%
+    dplyr::select(user_id, tool, all_of(sub)) %>%
+    pivot_wider(names_from = tool, values_from = all_of(sub)) %>%
+    drop_na()
+  
+  long_data <- sub_data %>%
+    pivot_longer(cols = c("MoodTag", "common"), 
+                 names_to = "tool", values_to = "score") %>%
+    mutate(tool = factor(tool, levels = c("common", "MoodTag")),
+           user_id = as.factor(user_id))
+  
+
+  # 2. 執行 paired t-test（MoodTag vs. common）
+  t_result <- t.test(sub_data$MoodTag, sub_data$common, paired = TRUE)
+
+  # 3. 顯示結果
+  cat("====", sub, "====\n")
+  cat(sprintf("t(%d) = %.2f, p = %.4f\n", 
+              t_result$parameter, t_result$statistic, t_result$p.value))
+  
+  # 若你想加入效果量（Cohen's d），可以加上以下：
+  diff <- sub_data$MoodTag - sub_data$common
+  d <- mean(diff) / sd(diff)
+  cat(sprintf("Cohen's d = %.2f\n", d))
+  cat("\n")
+}
+
+# Emotion_Express	$F(1, 27) = 30.60$, $p < .001$, $\eta_p^2 = .531$
+# Engagement_Play	$F(1, 27) = 14.67$, $p = .0007$, $\eta_p^2 = .352$
+# Presence_in_Absence	$F(1, 27) = 15.57$, $p = .0005$, $\eta_p^2 = .366$
+# Social_Support	$F(1, 27) = 27.20$, $p < .001$, $\eta_p^2 = .502$
+# Obligations	$F(1, 27) = 32.71$, $p < .001$, $\eta_p^2 = .548$
+# Threat_to_Privacy	$F(1, 27) = 4.11$, $p = .053$, $\eta_p^2 = .132$
+# Unmet_Expectations	$F(1, 27) = 17.11$, $p < .001$, $\eta_p^2 = .388$
+```
+```{r}
+print(messages_data)
+# 前處理：計算每位使用者在各模式下的負向情緒總分
+user_summary <- messages_data %>%
+  filter(time_deltas <= 600) %>%
+  group_by(user_id, condition) %>%
+  summarise(
+    sum_score = sum(negative_sentiment_score, na.rm = TRUE),
+    .groups = "drop"
+  ) 
+
+# 轉為 long format 並轉為 factor
+user_summary <- user_summary %>%
+  mutate(user_id = as.factor(user_id),
+         condition = as.factor(condition))
+
+# 使用 ezANOVA 執行 RM ANOVA
+rm_result <- ezANOVA(
+  data = user_summary,
+  dv = sum_score,
+  wid = user_id,
+  within = condition,
+  detailed = TRUE
+)
+
+# 輸出 ANOVA 詳細結果（LaTeX 友善格式）
+report_anova_latex(rm_result, user_summary, dv_col = "sum_score")
+
+# posthoc 檢定與繪圖
+posthoc <- pairwise.t.test(user_summary$sum_score, user_summary$condition, paired = TRUE, p.adjust.method = "bonferroni")
+sig_labels <- make_sig_labels(posthoc, max(user_summary$sum_score, na.rm = TRUE))
+
+NLP_neg_text <- ggplot(user_summary, aes(x = condition, y = sum_score)) +
+  stat_summary(aes(fill = condition), fun = mean, geom = "bar", width = 0.5, color = "black", position = position_dodge(0.8)) +
+  stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", 
+               width = 0.2, position = position_dodge(0.8)) +
+  stat_pvalue_manual(
+    sig_labels,
+    label = "significance",
+    xmin = "group1",
+    xmax = "group2",
+    y.position = c(17, 18.5, 20),
+    tip.length = 0.01
+  ) +
+  labs(
+    x = "Condition",
+    y = "Negative Emotion Word Sum"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),      # 不顯示 x 軸標題
+    axis.title.y = element_text(color = "black", face = "bold", size = 14),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(color = "black", size = 0.8),
+    axis.text.x = element_text(color = "black", angle = 0, hjust = 0.5, size = 14),
+    axis.text.y = element_text(color = "black", size = 12),
+    axis.ticks = element_line(color = "black", size = 1),
+    axis.ticks.length = unit(5, "pt"),
+    legend.position = "none",
+    plot.title = element_text(face = "bold", hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    values = c("MoodTag" = "#c44e52", "Control" = "#4c72b0", "Manual" = "#55a868")
+  )
+print(NLP_neg_text)
+# 保存圖表為 PDF
+pdf(paste0("figures/NLPnegtext.pdf"), width = 4, height = 5)
+# 顯示圖表
+print(NLP_neg_text)
+
+dev.off()
+```
+
+```{r}
+print(messages_data)
+# 前處理：計算每位使用者在各模式下的負向情緒總分
+user_summary <- messages_data %>%
+  filter(time_deltas <= 600) %>%
+  group_by(user_id, condition) %>%
+  summarise(
+    sum_score = sum(positive_sentiment_score, na.rm = TRUE),
+    .groups = "drop"
+  ) 
+
+# 轉為 long format 並轉為 factor
+user_summary <- user_summary %>%
+  mutate(user_id = as.factor(user_id),
+         condition = as.factor(condition))
+
+# 使用 ezANOVA 執行 RM ANOVA
+rm_result <- ezANOVA(
+  data = user_summary,
+  dv = sum_score,
+  wid = user_id,
+  within = condition,
+  detailed = TRUE
+)
+
+# 輸出 ANOVA 詳細結果（LaTeX 友善格式）
+report_anova_latex(rm_result, user_summary, dv_col = "sum_score")
+
+# posthoc 檢定與繪圖
+posthoc <- pairwise.t.test(user_summary$sum_score, user_summary$condition, paired = TRUE, p.adjust.method = "bonferroni")
+sig_labels <- make_sig_labels(posthoc, max(user_summary$sum_score, na.rm = TRUE))
+
+NLP_neg_text <- ggplot(user_summary, aes(x = condition, y = sum_score)) +
+  stat_summary(aes(fill = condition), fun = mean, geom = "bar", width = 0.5, color = "black", position = position_dodge(0.8)) +
+  stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", 
+               width = 0.2, position = position_dodge(0.8)) +
+  stat_pvalue_manual(
+    sig_labels,
+    label = "significance",
+    xmin = "group1",
+    xmax = "group2",
+    y.position = c(17, 18.5, 20),
+    tip.length = 0.01
+  ) +
+  labs(
+    x = "Condition",
+    y = "Positive Emotion Word Sum"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),      # 不顯示 x 軸標題
+    axis.title.y = element_text(color = "black", face = "bold", size = 14),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(color = "black", size = 0.8),
+    axis.text.x = element_text(color = "black",angle = 0, hjust = 0.5, size = 14),
+    axis.text.y = element_text(size = 12),
+    axis.ticks = element_line(color = "black", size = 1),
+    axis.ticks.length = unit(5, "pt"),
+    legend.position = "none",
+    plot.title = element_text(face = "bold", hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    values = c("MoodTag" = "#c44e52", "Control" = "#4c72b0", "Manual" = "#55a868")
+  )
+print(NLP_neg_text)
+# 保存圖表為 PDF
+pdf(paste0("figures/NLPpostext.pdf"), width = 4, height = 5)
+# 顯示圖表
+print(NLP_neg_text)
+
+dev.off()
+```
+
+
+```{r}
+print(paq_data_diff)
+MoodTag_data <- paq_data_diff %>%
+  left_join(tpa_data, by = c("user_id")) %>%
+  filter(condition == "MoodTag")
+
+print(MoodTag_data)
+
+y_min <- min(MoodTag_data$Total_Score_diff, na.rm = TRUE)
+y_max <- max(MoodTag_data$Total_Score_diff, na.rm = TRUE)
+
+# (A) Distrust
+plot_distrust <- ggplot(MoodTag_data, aes(x = Distrust, y = Total_Score_diff)) +
+  geom_point(color = "#f07c78", size = 2) +  # 散點
+  geom_smooth(method = "lm", se = TRUE, color = "black", fill = "grey80", alpha = 0.2, size = 1) +  # 回歸線與信賴區間
+  xlim(min(MoodTag_data$Distrust, na.rm = TRUE),max(MoodTag_data$Distrust, na.rm = TRUE)) +  
+  ylim(y_min, y_max) +  # ✅ 固定 Y 軸
+  labs(x = "Distrust Score", y = "Change in Alexithymia Score") +
+  stat_cor(method = "pearson", label.x = 2, label.y = max(MoodTag_data$Improvement_Score, na.rm = TRUE) * 0.9) +
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),
+    axis.title = element_text(face = "bold", size = 16),
+    axis.text = element_text(size = 14),  
+    axis.line = element_line(color = "black", size = 0.8),
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
+
+
+# (B) Trust
+plot_trust <- ggplot(MoodTag_data, aes(x = Trust, y = Total_Score_diff)) +
+  geom_point(color = "#36c3d0", size = 2) +
+  geom_smooth(method = "lm", se = TRUE, color = "black", fill = "grey80", alpha = 0.2, size = 1) +
+  xlim(min(MoodTag_data$Trust, na.rm = TRUE),max(MoodTag_data$Trust, na.rm = TRUE)) +  
+  ylim(y_min, y_max) +  # ✅ 固定 Y 軸
+  labs(x = "Trust Score", y = "Change in Alexithymia Score") +
+  stat_cor(method = "pearson", label.x = 2, label.y = max(MoodTag_data$Total_Score_diff, na.rm = TRUE) * 0.9) +
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),
+    axis.title = element_text(face = "bold", size = 16),
+    axis.text = element_text(size = 14),  
+    axis.line = element_line(color = "black", size = 0.8),
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
+
+combined_plot <- ggarrange(
+  plot_trust, plot_distrust,
+  ncol = 2, nrow = 1,
+  common.legend = FALSE
+)
+
+print(combined_plot)
+
+cor.test(MoodTag_data$Distrust, MoodTag_data$Total_Score_diff)
+cor.test(MoodTag_data$Trust, MoodTag_data$Total_Score_diff)
+
+# 保存圖表為 PDF
+pdf(paste0("figures/Cor_paq_tpa.pdf"), width = 10, height = 6)
+
+# 儲存 Trust 圖
+pdf("figures/Cor_Trust_Alexithymia.pdf", width = 6, height = 6)
+print(plot_trust)
+dev.off()
+
+# 儲存 Distrust 圖
+pdf("figures/Cor_Distrust_Alexithymia.pdf", width = 6, height = 6)
+print(plot_distrust)
+dev.off()
+
+# 顯示圖表
+print(combined_plot)
+
+dev.off()
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

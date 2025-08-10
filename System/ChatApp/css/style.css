@@ -881,4 +881,35 @@ body{
   .chat-area form button{
     width: 45px;
   }
+  /* 讓左右並排 */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 16px;
+  }
+
+  /* 假如 .wrapper 原本被限制很窄（很多聊天模板都 450px），要放寬 */
+  .wrapper {
+    max-width: 1100px;   /* 或 100%, 視你的設計 */
+    margin: 0 auto;
+  }
+
+  /* 右側側欄樣式 */
+  .affect-panel {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 12px;
+    height: calc(100dvh - 140px);
+    overflow: auto;
+    position: sticky;
+    top: 12px;
+    background: #fff;
+  }
+
+  /* 小螢幕自動改為上下堆疊（可選） */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .affect-panel { position: static; height: auto; }
+  }
+
 }

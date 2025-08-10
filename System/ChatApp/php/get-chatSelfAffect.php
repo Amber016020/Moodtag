@@ -48,81 +48,59 @@
 
         $query = mysqli_query($conn, $sql);
         if(mysqli_num_rows($query) > 0){
+            $outlineStyle = '';
             while($row = mysqli_fetch_assoc($query)){
-                if (!is_null($row['msg_time'])) {
-                    $msgTimeFormatted = date("H:i", strtotime($row['msg_time']));
-                } else {
-                    $msgTimeFormatted = '00:00'; 
-                }
+                $msgTimeFormatted = !is_null($row['msg_time']) ? date("H:i", strtotime($row['msg_time'])) : '00:00';
 
+                // 映射表
                 $emotionsEmojiDict = [
-                    "anger" => "😡",
-                    "disgust" => "🤮",
-                    "fear" => "😨",
-                    "sad" => "😢",
+                    "anger"    => "😡",
+                    "disgust"  => "🤮",
+                    "fear"     => "😨",
+                    "sad"      => "😢",
                     "surprise" => "😮"
                 ];
 
-                if($row['outgoing_msg_id'] === $outgoing_id){
-                    $output .= '<div id="' . $row['msgId'] . '" class="chat outgoing">';
-                    $output .= '<div id="affectLabelByHuman" class="affect outgoing human">';
-                    // 如果是自己有做人為標記的訊息，要在上面加上情緒標記
-                    if(isset($row['latest_emotion_by_human']) && isset($emotionsEmojiDict[$row['latest_emotion_by_human']]) !== false) {
-                        $output .= $emotionsEmojiDict[$row['latest_emotion_by_human']];
-                    } 
-                    $output .= '</div><div class="details"><span class="time">' . $msgTimeFormatted . '</span>';
-                    // 如果有辨識情緒，要出現在訊息前方
-                    if(isset($row['latest_emotion']) && isset($emotionsEmojiDict[$row['latest_emotion']])) {
-                        $output .= '<div id="emoTag" style="font-size: 25px;">' . $emotionsEmojiDict[$row['latest_emotion']] . '</div>';
-                    }                    
-                    $output .= '<img class="smile" src="images/smile.png" alt="Smile">';
-                    // 如果有人為標記的訊息，訊息要加綠色外框
-                    if(isset($row['latest_emotion_by_human']) && isset($emotionsEmojiDict[$row['latest_emotion_by_human']]) !== false) {
-                        $output .= '<p style="outline: 4px solid #00bb8c">' . $row['msg'] ;
-                    } 
-                    else{
-                        $output .= '<p>' . $row['msg'] ;
-                    }
-                    // 如果是自己有做情緒標記的訊息，要在下面加上情緒標記
-                    if(isset($row['affectEmo']) && isset($emotionsEmojiDict[$row['affectEmo']])) {
-                        $output .= '</p></div><div id="affectLabel" class="affect outgoing">' . $emotionsEmojiDict[$row['affectEmo']] . '</div></div>';
-                    } else {
-                        $output .= '</p></div><div id="affectLabel" class="affect outgoing"></div></div>';
-                    }
-                }else{
-                    $output .= '<div id="' . $row['msgId'] . '" class="chat incoming">';
-                    $output .= '<div id="affectLabelByHuman" class="affect incoming human">';
-                    // 如果是自己有做人為標記的訊息，要在上面加上情緒標記
-                    if(isset($row['latest_emotion_by_human']) && isset($emotionsEmojiDict[$row['latest_emotion_by_human']])) {
-                        $output .= $emotionsEmojiDict[$row['latest_emotion_by_human']];
-                    } 
-                    $output .= '</div><div class="details"><img class="profile round" src="images/'.$row['img'].'" alt="">';
+                // 取出 manual(人為) 與 moodtag(系統) 的代碼與 emoji
+                // manual 優先用 latest_emotion_by_human，退回 affectEmo（若還有值）
+                $manualKey   = $row['latest_emotion_by_human'] ?? ($row['affectEmo'] ?? null);
+                $moodtagKey  = $row['latest_emotion'] ?? null;
 
-                    // 如果有人為標記的訊息，訊息要加綠色外框
-                    if(isset($row['needOutLine']) && isset($emotionsEmojiDict[$row['needOutLine']]) !== false) {
-                        $output .= '<p style="outline: 4px solid #00bb8c">' . $row['msg'] . '</p>';
-                    } else{
-                        $output .= '<p>' . $row['msg'] . '</p>';
-                    }
-                    // 如果有辨識情緒，要出現在訊息前方
-                    if(isset($row['latest_emotion']) && isset($emotionsEmojiDict[$row['latest_emotion']])) {
-                        $output .= '<div id="emoTag" style="font-size: 25px;">' . $emotionsEmojiDict[$row['latest_emotion']] . '</div>';
-                    }            
-                    
-                    $output .= '<div class="read-status">
-                                    <span class="read">已讀</span>
-                                    <span class="time">' . $msgTimeFormatted . '</span>
-                                </div>
-                                <img class="smile" src="images/smile.png" alt="Smile">
-                                </div>';
-                    // 如果是自己有做情緒標記的訊息，要在下面加上情緒標記
-                    if(isset($row['affectEmo']) && isset($emotionsEmojiDict[$row['affectEmo']])) {
-                        $output .= '<div id="affectLabel" class="affect incoming">' . $emotionsEmojiDict[$row['affectEmo']] . '</div></div>';
-                    } else {
-                        $output .= '<div id="affectLabel" class="affect incoming"></div></div>';
-                    }
+                $manualEmoji  = ($manualKey  && isset($emotionsEmojiDict[$manualKey]))  ? $emotionsEmojiDict[$manualKey]  : '';
+                $moodtagEmoji = ($moodtagKey && isset($emotionsEmojiDict[$moodtagKey])) ? $emotionsEmojiDict[$moodtagKey] : '';
+
+                $msgId  = $row['msgId'];
+                $isMine = ($row['outgoing_msg_id'] === $outgoing_id);
+
+                if ($isMine) {
+                    $output .= '<div id="'.$msgId.'" class="chat outgoing" data-msg-id="'.$msgId.'">';
+                    $output .= '  <div class="details">';
+                    $output .= '    <span class="time">'.$msgTimeFormatted.'</span>';
+                    $output .= '    <img class="smile" src="images/smile.png" alt="Smile">';
+                    $output .= '    <p'.$outlineStyle.'>'.$row['msg'].'</p>';
+                    $output .= '  </div>';
+                } else {
+                    $output .= '<div id="'.$msgId.'" class="chat incoming" data-msg-id="'.$msgId.'">';
+                    $output .= '  <div class="details">';
+                    $output .= '    <img class="profile round" src="images/'.$row['img'].'" alt="">';
+                    $output .= '    <p'.$outlineStyle.'>'.$row['msg'].'</p>';
+                    $output .= '    <div class="read-status">';
+                    $output .= '      <span class="read">已讀</span>';
+                    $output .= '      <span class="time">'.$msgTimeFormatted.'</span>';
+                    $output .= '      <img class="smile" src="images/smile.png" alt="Smile">';
+                    $output .= '    </div>';
+                    $output .= '  </div>';
                 }
+
+                // ✅ 只給右側鏡射用：隱藏輸出標準 affect 結構（供 JS 讀取）
+                $output .= '  <div class="affect labels" data-manual="'.htmlspecialchars($manualKey ?? '', ENT_QUOTES).'" data-moodtag="'.htmlspecialchars($moodtagKey ?? '', ENT_QUOTES).'" style="display:none">';
+                $output .= '    <span class="affect-label manual">'.$manualEmoji.'</span>';
+                $output .= '    <span class="affect-label moodtag">'.$moodtagEmoji.'</span>';
+                $output .= '  </div>';
+
+                $output .= '</div>'; // .chat
             }
+
         }else{
             $output .= '<div id="noMessages" class="text">No messages are available. Once you send message they will appear here.</div>';
         }
