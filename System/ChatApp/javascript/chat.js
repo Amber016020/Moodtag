@@ -535,7 +535,7 @@ function connectWebSocket() {
 
   conn.onmessage = function (e) {
     const data = JSON.parse(e.data);
-
+    console.log("Received data:", data);
     if (data.type === 'scale') {
       user1SurveyCompleted = false;
       user2SurveyCompleted = false;
@@ -569,6 +569,7 @@ function connectWebSocket() {
     }
 
     if (data.type === 'nextPage') {
+      debugger
       const nextLink = document.getElementById('nextModeLink');
       if (nextLink) nextLink.style.display = '';
       nextModeLink(data.msg.replace(/replaceUserId/g, outcoming_id));
@@ -1049,7 +1050,7 @@ function updateTextContent(mode) {
             break;
           }
           if (modeIntroText) {
-            modeIntroText.textContent = "請自己透過標記當下情緒來調節情緒。如果有問題請隨時告訴實驗人員！";
+            modeIntroText.textContent = "當你對自己的訊息或是對方的訊息感受到負面情緒，請進行情緒標記。如果有問題請隨時告訴實驗人員！";
             modeIntroText.classList.add('mode-intro-text-P');
           }
           if (modeIntroImg) modeIntroImg.classList.add('mode-intro-img-P');

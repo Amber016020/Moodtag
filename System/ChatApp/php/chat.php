@@ -133,7 +133,8 @@ body.mt-chat[data-mode="Manual"] .affect-panel__legend .legend-separator,
 body.mt-chat[data-mode="Manual"] .affect-panel__legend .legend-col:last-child {
   display: none !important;
 }
-body.mt-chat[data-mode="Control"] #affectPanel {
+body.mt-chat[data-mode="Control"] #affectPanel,
+body.mt-chat[data-mode="neutral"] #affectPanel {
   display: none !important;
 }
 

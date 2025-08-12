@@ -14,11 +14,8 @@
                 -- 子查詢查出系統標記的情緒
                 (SELECT e1.emotion FROM emotion e1
                 LEFT JOIN emotion e2 ON e1.msg_id = e2.msg_id 
-                                    AND e1.source NOT LIKE'Human%' 
-                                    AND e2.source NOT LIKE'Human%' 
                                     AND e1.emotion_time < e2.emotion_time
-                WHERE e2.msg_id IS NULL AND e1.source NOT LIKE 'Human%' 
-                                        AND messages.msg_id=e1.msg_id 
+                WHERE e2.msg_id IS NULL AND messages.msg_id=e1.msg_id 
                                         AND messages.outgoing_msg_id=e1.labeler_user_id
                 ) AS latest_emotion,
 
@@ -28,8 +25,7 @@
                                     AND e1.source LIKE'Human%' 
                                     AND e2.source LIKE'Human%' 
                                     AND e1.emotion_time < e2.emotion_time
-                WHERE e2.msg_id IS NULL AND e1.source LIKE 'Human%' 
-                                        AND messages.msg_id=e1.msg_id 
+                WHERE e2.msg_id IS NULL AND messages.msg_id=e1.msg_id 
                                         AND messages.outgoing_msg_id=e1.labeler_user_id
                                         AND e1.labeler_user_id={$outgoing_id}
                                         AND e1.emotion is not null

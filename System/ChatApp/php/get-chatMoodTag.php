@@ -9,42 +9,49 @@ if(isset($_SESSION['unique_id'])){
     $mode = $_POST['mode'];
     $isPractice = $_POST['isPractice'];
     $output = "";
-    $sql = "SELECT *,messages.msg_id as msgId,
+    $sql = "
+    SELECT
+    m.*,
+    u.*,
+    m.msg_id AS msgId,
 
-            -- 子查詢查出系統標記的情緒
-            (SELECT e1.emotion FROM emotion e1
-            LEFT JOIN emotion e2 ON e1.msg_id = e2.msg_id 
-                                AND e1.source NOT LIKE'Human%' 
-                                AND e2.source NOT LIKE'Human%' 
-                                AND e1.emotion_time < e2.emotion_time
-            WHERE e2.msg_id IS NULL AND e1.source NOT LIKE 'Human%' 
-                                    AND messages.msg_id=e1.msg_id 
-                                    AND messages.outgoing_msg_id=e1.labeler_user_id
-            ) AS latest_emotion,
+    /* 系統判斷情緒：同一則訊息、同一個標記者（=發送者），取最新一筆 */
+    (
+        SELECT e1.emotion
+        FROM emotion e1
+        WHERE e1.emotion IS NOT NULL
+        AND e1.msg_id = m.msg_id
+        AND e1.labeler_user_id = m.outgoing_msg_id
+        ORDER BY e1.emotion_time DESC
+        LIMIT 1
+    ) AS latest_emotion,
 
-            -- 子查詢查出自己標記的人為標記的情緒
-            (SELECT e1.emotion FROM emotion e1
-            LEFT JOIN emotion e2 ON e1.msg_id = e2.msg_id 
-                                AND e1.source LIKE'Human%' 
-                                AND e2.source LIKE'Human%' 
-                                AND e1.emotion_time < e2.emotion_time
-            WHERE e2.msg_id IS NULL AND e1.source LIKE 'Human%' 
-                                    AND messages.msg_id=e1.msg_id 
-                                    AND messages.outgoing_msg_id=e1.labeler_user_id
-                                    AND e1.labeler_user_id={$outgoing_id}
-                                    AND e1.emotion is not null
-            ) AS latest_emotion_by_human
+    /* 自己標記的最新情緒：同一則訊息、目前登入者作的標記，且他就是該訊息的發送者 */
+    (
+        SELECT e1.affectEmo
+        FROM affectlabel e1
+        WHERE e1.affectEmo IS NOT NULL
+        AND e1.msg_id = m.msg_id
+        AND (e1.user_id = {$outgoing_id} OR e1.user_id =  {$incoming_id})
+        AND m.outgoing_msg_id = e1.user_id
+        ORDER BY e1.emo_time DESC
+        LIMIT 1
+    ) AS latest_emotion_by_human
 
-            FROM messages 
-            LEFT JOIN users ON users.unique_id = messages.outgoing_msg_id
-            LEFT JOIN affectlabel ON affectlabel.user_id = {$outgoing_id} 
-                        AND messages.msg_id = affectlabel.msg_id 
-                        AND affectlabel.emo_del_time IS NULL
-            WHERE ((outgoing_msg_id = {$outgoing_id} AND incoming_msg_id = {$incoming_id})
-                OR (outgoing_msg_id = {$incoming_id} AND incoming_msg_id = {$outgoing_id})) 
-                AND messages.pattern = '{$mode}' 
-                AND isPractice = '{$isPractice}' 
-            ORDER BY messages.msg_id";
+    FROM messages m
+    LEFT JOIN users u
+    ON u.unique_id = m.outgoing_msg_id
+
+    WHERE
+    (
+        (m.outgoing_msg_id = {$outgoing_id} AND m.incoming_msg_id = {$incoming_id})
+        OR
+        (m.outgoing_msg_id = {$incoming_id} AND m.incoming_msg_id = {$outgoing_id})
+    )
+    AND m.`pattern` = '{$mode}'
+    AND m.isPractice = '{$isPractice}'
+    ORDER BY m.msg_id ASC
+    ";
 
     $query = mysqli_query($conn, $sql);
     if(mysqli_num_rows($query) > 0){
